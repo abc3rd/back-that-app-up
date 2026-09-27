@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -28,9 +28,17 @@ export default function Contact() {
       <p className="text-sm leading-relaxed text-muted-foreground">
         Questions, feedback, or press inquiries about Back That App Up! are welcome. Reach out and the team will get back to you.
       </p>
-      <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-2 text-sm text-primary transition-opacity hover:opacity-80">
-        <Mail className="h-4 w-4" /> {CONTACT_EMAIL}
-      </a>
+      <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
+        <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-2 text-sm text-primary transition-opacity hover:opacity-80">
+          <Mail className="h-4 w-4" /> {CONTACT_EMAIL}
+        </a>
+        <a href="tel:+19418820130" className="inline-flex items-center gap-2 text-sm text-primary transition-opacity hover:opacity-80">
+          <Phone className="h-4 w-4" /> +1 941-882-0130
+        </a>
+        <a href="tel:+16266634287" className="inline-flex items-center gap-2 text-sm text-primary transition-opacity hover:opacity-80">
+          <Phone className="h-4 w-4" /> +1 62-OMEGA-UCP
+        </a>
+      </div>
       <form onSubmit={send} className="flex flex-col gap-4">
         <label className="flex flex-col gap-2 text-sm">
           <span className="text-muted-foreground">Your name</span>
