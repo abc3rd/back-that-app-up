@@ -14,18 +14,19 @@ export default function usePreRoll() {
   const listeningRef = useRef(false);
   const voiceArmRef = useRef(false);
   const armRef = useRef(null);
+  const recWantedRef = useRef(false);
 
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [db, setDb] = useState(0);
   const [threshold, setThreshold] = useState(() => stored('btau.threshold.v2', 55));
-  const [rewind, setRewind] = useState(() => stored('btau.rewind', 10));
+  const [rewind, setRewind] = useState(() => stored('btau.rewind.v2', 180));
   const [recordings, setRecordings] = useState([]);
   const [lastSavedId, setLastSavedId] = useState(null);
   const [error, setError] = useState(null);
   const [voiceHeard, setVoiceHeard] = useState(false);
   const [voiceSupported] = useState(() => typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
-  const [voiceArm, setVoiceArm] = useState(false);
+  const [voiceArm, setVoiceArm] = useState(() => typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition));
   const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') === '1');
   const silentRef = useRef(silentMode);
 
@@ -35,7 +36,7 @@ export default function usePreRoll() {
 
   const refresh = useCallback(async () => setRecordings(await listRecordings()), []);
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => () => { engineRef.current?.stop(); recRef.current?.stop(); }, []);
+  useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, reason }) => {
     const ts = Date.now();
@@ -66,14 +67,19 @@ export default function usePreRoll() {
       if (text.includes(PHRASE)) {
         setVoiceHeard(true);
         setTimeout(() => setVoiceHeard(false), 1500);
-        stopRec();
-        armRef.current?.();
+        if (listeningRef.current) {
+          engineRef.current?.saveNow();
+          stopRec();
+        } else {
+          stopRec();
+          armRef.current?.();
+        }
       }
     };
     rec.onerror = () => {};
     rec.onend = () => {
-      if (voiceArmRef.current && !listeningRef.current) {
-        setTimeout(() => { try { rec.start(); } catch {} }, 300);
+      if (recWantedRef.current) {
+        setTimeout(() => { try { rec.start(); recRef.current = rec; } catch {} }, 300);
       }
     };
     try { rec.start(); recRef.current = rec; } catch {}
@@ -81,6 +87,7 @@ export default function usePreRoll() {
 
   const arm = async () => {
     setError(null);
+    recWantedRef.current = false;
     stopRec();
     const engine = new PreRollEngine({ onLevel: setDb, onCapture: handleCapture, onCaptureStart: () => { setCapturing(true); if (!silentRef.current) showStatus('Back That App Up! — Capturing', 'Spike detected — saving the moment…'); } });
     try {
@@ -93,6 +100,7 @@ export default function usePreRoll() {
     setListening(true);
     if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
+    if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
   };
 
   useEffect(() => { armRef.current = arm; }, [arm]);
@@ -105,7 +113,6 @@ export default function usePreRoll() {
     setCapturing(false);
     setDb(0);
     hideStatus();
-    if (voiceArmRef.current) startRec();
   };
 
   const changeThreshold = (v) => {
@@ -116,7 +123,7 @@ export default function usePreRoll() {
 
   const changeRewind = (v) => {
     setRewind(v);
-    localStorage.setItem('btau.rewind', v);
+    localStorage.setItem('btau.rewind.v2', v);
     engineRef.current?.setRewind(v);
   };
 
@@ -124,6 +131,7 @@ export default function usePreRoll() {
     const next = !voiceArm;
     setVoiceArm(next);
     voiceArmRef.current = next;
+    recWantedRef.current = next;
     if (next) startRec(); else stopRec();
   };
 

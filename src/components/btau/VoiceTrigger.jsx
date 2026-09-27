@@ -10,7 +10,7 @@ export default function VoiceTrigger({ enabled, supported, heard, onToggle }) {
         <div>
           <p className="text-sm">Voice arm</p>
           <p className="text-xs text-muted-foreground">
-            {supported ? <>Say “Back That App Up” to start hands-free</> : 'Not supported in this browser'}
+            {supported ? <>Say “Back That App Up” to start — say it again while listening to save the loop</> : 'Not supported in this browser'}
           </p>
         </div>
       </div>
