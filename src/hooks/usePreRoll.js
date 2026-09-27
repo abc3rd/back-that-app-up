@@ -11,7 +11,7 @@ import {
   cleanupExpiredTemporary,
   cleanupExpiredRecordings,
 } from '@/lib/preroll/storage';
-import { captureLocation, reverseGeocode, buildMetadata, metadataToDescription } from '@/lib/preroll/metadata';
+import { captureLocation, reverseGeocode, buildMetadata } from '@/lib/preroll/metadata';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
@@ -20,13 +20,25 @@ import { FEATURES } from '@/lib/entitlements';
 
 const rateFor = (q) => (q === 'high' ? HIGH_RATE : STANDARD_RATE);
 
+// Stealth confirmation: a single quiet spoken cue instead of notifications/vibration.
+function playBackupCue() {
+  try {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const u = new SpeechSynthesisUtterance('backup');
+    u.volume = 0.4;
+    u.rate = 1.2;
+    synth.speak(u);
+  } catch {}
+}
+
 export default function usePreRoll() {
   const settings = useSettings();
   const {
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
     effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown, effRecordingRetentionDays,
     threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
-    driveFolder, locationTagging, effAiTranscription, autoListen,
+    locationTagging, effAiTranscription, autoListen,
   } = settings;
 
   const engineRef = useRef(null);
@@ -48,7 +60,14 @@ export default function usePreRoll() {
   const [lastSavedId, setLastSavedId] = useState(null);
   const [error, setError] = useState(null);
   const [voiceHeard, setVoiceHeard] = useState(false);
-  const [voiceSupported] = useState(() => typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+  const [voiceSupported] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return false;
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod/.test(ua) && !window.MSStream) return false; // iOS Safari/PWA does not support web speech recognition
+    return true;
+  });
   const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') === '1');
   const { toast } = useToast();
 
@@ -83,26 +102,6 @@ export default function usePreRoll() {
   }, [effTempRetentionMinutes, effRecordingRetentionDays]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
-
-  const backupToDrive = useCallback(async (blob, name, meta) => {
-    try {
-      const res = await base44.functions.invoke('createDriveUploadSession', {
-        fileName: name,
-        mimeType: 'audio/wav',
-        contentLength: blob.size,
-        folderName: driveFolder,
-        description: meta ? metadataToDescription(meta) : undefined,
-      });
-      const uploadUrl = res.data?.uploadUrl;
-      if (!uploadUrl) throw new Error('No upload URL');
-      const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/wav' }, body: blob });
-      if (!putRes.ok) throw new Error('Upload failed');
-      toast({ description: 'Recording backed up to Google Drive' });
-      base44.functions.invoke('sendUploadNotification', { name, folder: driveFolder }).catch(() => {});
-    } catch (e) {
-      toast({ variant: 'destructive', description: 'Google Drive backup failed' });
-    }
-  }, [toast, driveFolder]);
 
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, triggerType, triggerTimestamp, triggerOffsetMs }) => {
     const ts = triggerTimestamp || Date.now();
@@ -146,14 +145,14 @@ export default function usePreRoll() {
       if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
       if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
       refresh();
-      if (protectedCapture) backupToDrive(blob, rec.name, meta);
       if (protectedCapture) saveMoment(rec);
+      if (silentRef.current) playBackupCue();
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       toast({ variant: 'destructive', description: 'Failed to save capture' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, saveMoment, toast]);
+  }, [refresh, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, saveMoment, toast]);
 
   const stopRec = useCallback(() => {
     recGenRef.current++; // invalidate any pending restart from a stale instance
@@ -334,7 +333,6 @@ export default function usePreRoll() {
       const saved = await protectRecording(id);
       if (saved) {
         setRecordings((prev) => prev.map((r) => (r.id === id ? saved : r)));
-        backupToDrive(saved.blob, saved.name, saved.meta);
       } else {
         setRecordings((prev) => prev.map((r) => (r.id === id ? rec : r)));
         toast({ variant: 'destructive', description: 'Failed to protect capture' });

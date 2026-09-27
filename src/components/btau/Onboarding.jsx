@@ -36,7 +36,7 @@ const STEPS = [
   {
     icon: ShieldCheck,
     title: 'It stays on your device',
-    body: 'Audio lives in memory only until you save. Saved clips stay on your phone. Turn on Google Drive backup or transcription in Settings if you want them in the cloud.',
+    body: 'Audio lives in memory only until you save. Saved clips stay on your phone. Turn on transcription in Settings if you want spoken-word search.',
   },
 ];
 

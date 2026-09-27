@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -37,15 +36,7 @@ export default function StorageSection() {
   };
 
   return (
-    <SettingSection title="Storage & Backup" description="Local retention and cloud backup">
-      <SettingRow title="Google Drive folder" description="Cloud folder for automatic recording backups">
-        <Input
-          value={s.driveFolder}
-          onChange={(e) => s.setDriveFolder(e.target.value)}
-          placeholder="Back That App Up!"
-          className="h-11 w-56"
-        />
-      </SettingRow>
+    <SettingSection title="Storage" description="Local retention and cleanup">
       <SettingRow title="Location tagging" description="Tag captures with GPS location for AI moment search">
         <Switch checked={s.locationTagging} onCheckedChange={s.setLocationTagging} />
       </SettingRow>

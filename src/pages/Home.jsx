@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import usePreRoll from '@/hooks/usePreRoll';
 import { useTabScroll } from '@/hooks/useTabScroll';
-import Onboarding from '@/components/btau/Onboarding';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/btau/Header';
 import ArmControl from '@/components/btau/ArmControl';
 import LevelMeter from '@/components/btau/LevelMeter';
@@ -27,7 +27,10 @@ export default function Home() {
   useTabScroll('/', scrollRef);
   const p = usePreRoll();
   const [highlightId, setHighlightId] = useState(null);
-  const [onboarded, setOnboarded] = useState(() => localStorage.getItem('btau.onboarded') === '1');
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (localStorage.getItem('btau.onboarded') !== '1') navigate('/onboarding', { replace: true });
+  }, []);
   const rewindLabel = REWIND_OPTIONS.find((o) => o.value === p.rewind)?.label ?? `${p.rewind} s`;
   const { toast } = useToast();
   useQuickBackup({ listening: p.listening, onSave: p.backThatAppUp, toast });
@@ -36,7 +39,6 @@ export default function Home() {
     <>
     <PullToRefresh containerRef={scrollRef} onRefresh={p.refresh}>
       <div className="min-h-screen bg-background text-foreground">
-        {!onboarded && <Onboarding onDone={() => setOnboarded(true)} />}
         <main className="mx-auto flex max-w-md flex-col gap-12 px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
           <Header listening={p.listening} capturing={p.capturing} />
           {p.error && (

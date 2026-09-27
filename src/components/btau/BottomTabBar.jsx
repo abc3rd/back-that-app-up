@@ -30,7 +30,7 @@ export default function BottomTabBar() {
       return;
     }
     // Re-selecting the active tab: confirm with haptics + a brief icon scale.
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+    if (typeof navigator !== 'undefined' && navigator.vibrate && localStorage.getItem('btau.silent') !== '1') navigator.vibrate(10);
     setPulsePath(t.path);
     window.setTimeout(() => setPulsePath((p) => (p === t.path ? null : p)), 250);
     if (location.pathname !== t.path) {
