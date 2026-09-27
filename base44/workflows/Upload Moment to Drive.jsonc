@@ -1,0 +1,40 @@
+{
+  "name": "Upload Moment to Drive",
+  "description": "When a moment finishes processing (status becomes done), upload its recording and transcript to the dedicated Google Drive backup folder.",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Moment",
+      "events": [
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.data.status == \"done\" and .trigger.data.drive_uploaded != true }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "upload_moment_to_drive",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "upload": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "uploadMomentToDrive",
+            "args": {
+              "momentId": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Upload moment to Drive",
+            "description": "Upload recording and transcript to Google Drive"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -2,12 +2,26 @@ import React, { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Loader2, Pause, Play } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import PlaybackSpeedControl from '@/components/btau/PlaybackSpeedControl';
+import TagEditor from '@/components/btau/TagEditor';
 
 export default function MomentItem({ moment }) {
   const audioRef = useRef(null);
   const [signedUrl, setSignedUrl] = useState(null);
   const [signing, setSigning] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [tags, setTags] = useState(Array.isArray(moment.tags) ? moment.tags : []);
+  const [savingTags, setSavingTags] = useState(false);
+
+  const saveTags = async (next) => {
+    setTags(next);
+    setSavingTags(true);
+    try {
+      await base44.entities.Moment.update(moment.id, { tags: next });
+    } finally {
+      setSavingTags(false);
+    }
+  };
 
   const ensureSigned = async () => {
     if (signedUrl || signing) return signedUrl;
@@ -61,6 +75,10 @@ export default function MomentItem({ moment }) {
           </p>
         </div>
       </div>
+      <div className="flex items-center justify-between gap-2">
+        <PlaybackSpeedControl audioRef={audioRef} />
+        {savingTags && <span className="text-xs text-muted-foreground">saving…</span>}
+      </div>
       <div className="rounded-xl bg-secondary/50 p-3 text-sm leading-relaxed text-foreground/80">
         {transcribing ? (
           <span className="inline-flex items-center gap-2 text-muted-foreground">
@@ -73,6 +91,10 @@ export default function MomentItem({ moment }) {
         ) : (
           <p className="text-muted-foreground">No transcript yet.</p>
         )}
+      </div>
+      <div className="border-t pt-3">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Tags</p>
+        <TagEditor tags={tags} onChange={saveTags} />
       </div>
     </div>
   );

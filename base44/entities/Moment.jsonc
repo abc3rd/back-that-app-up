@@ -59,6 +59,11 @@
         "failed"
       ],
       "description": "Transcription status"
+    },
+    "drive_uploaded": {
+      "type": "boolean",
+      "description": "Whether the recording and transcript have been auto-uploaded to Google Drive",
+      "default": false
     }
   },
   "required": [

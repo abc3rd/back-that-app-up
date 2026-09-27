@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Download, Pause, Pencil, Play, Shield, Trash2 } from 'lucide-react';
+import PlaybackSpeedControl from '@/components/btau/PlaybackSpeedControl';
 
 const TRIGGER_LABEL = { voice: 'voice', button: 'manual', spike: 'spike' };
 
@@ -88,16 +89,19 @@ export default function RecordingItem({ rec, fresh, highlight, onDelete, onRenam
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
-      {hasMarker && (
-        <div className="relative h-1.5 w-full rounded-full bg-secondary">
-          <div className="absolute h-full rounded-full bg-primary" style={{ width: `${progress * 100}%` }} />
-          <div
-            className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-accent glow-magenta"
-            style={{ left: `${(rec.triggerOffsetMs / rec.durationMs) * 100}%` }}
-            title="Trigger"
-          />
-        </div>
-      )}
+      <div className="flex items-center justify-between">
+        <PlaybackSpeedControl audioRef={audioRef} />
+        {hasMarker && (
+          <div className="relative h-1.5 flex-1 ml-4 rounded-full bg-secondary">
+            <div className="absolute h-full rounded-full bg-primary" style={{ width: `${progress * 100}%` }} />
+            <div
+              className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-accent glow-magenta"
+              style={{ left: `${(rec.triggerOffsetMs / rec.durationMs) * 100}%` }}
+              title="Trigger"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

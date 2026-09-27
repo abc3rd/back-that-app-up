@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import MomentItem from '@/components/btau/MomentItem';
 import PullToRefresh from '@/components/PullToRefresh';
 import ScreenHeader from '@/components/btau/ScreenHeader';
+import TagFilter from '@/components/btau/TagFilter';
 import { useTabScroll } from '@/hooks/useTabScroll';
 
 export default function Moments() {
@@ -11,6 +12,13 @@ export default function Moments() {
   useTabScroll('/moments', scrollRef);
   const [moments, setMoments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTag, setActiveTag] = useState(null);
+
+  const allTags = React.useMemo(
+    () => [...new Set(moments.flatMap((m) => (Array.isArray(m.tags) ? m.tags : [])))].sort((a, b) => a.localeCompare(b)),
+    [moments]
+  );
+  const visible = activeTag ? moments.filter((m) => Array.isArray(m.tags) && m.tags.includes(activeTag)) : moments;
 
   const load = useCallback(async () => {
     try {
@@ -52,11 +60,20 @@ export default function Moments() {
               No moments yet. Save a back-up on the Home screen and it will appear here with its transcript.
             </p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {moments.map((m) => (
-                <MomentItem key={m.id} moment={m} />
-              ))}
-            </div>
+            <>
+              <TagFilter tags={allTags} active={activeTag} onSelect={setActiveTag} />
+              {visible.length === 0 ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  No moments tagged #{activeTag}.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {visible.map((m) => (
+                    <MomentItem key={m.id} moment={m} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
