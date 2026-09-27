@@ -1,16 +1,17 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home as HomeIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Home as HomeIcon, Settings as SettingsIcon, Voicemail } from 'lucide-react';
 
 const TABS = [
   { path: '/', label: 'Home', icon: HomeIcon },
+  { path: '/moments', label: 'Moments', icon: Voicemail },
   { path: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 export default function BottomTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const activePath = location.pathname === '/settings' ? '/settings' : '/';
+  const activePath = TABS.some((t) => t.path === location.pathname) ? location.pathname : '/';
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
       <div className="mx-auto flex max-w-md items-stretch">

@@ -21,6 +21,7 @@ const OAuthConsent = lazy(() => import('./pages/OAuthConsent'));
 const Settings = lazy(() => import('./pages/Settings'));
 const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
+const Moments = lazy(() => import('./pages/Moments'));
 
 const Spinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -43,6 +44,7 @@ const AnimatedRoutes = () => {
           <Route path="/settings" element={<MotionPage><Settings /></MotionPage>} />
           <Route path="/about" element={<MotionPage><About /></MotionPage>} />
           <Route path="/contact" element={<MotionPage><Contact /></MotionPage>} />
+          <Route path="/moments" element={<MotionPage><Moments /></MotionPage>} />
           <Route path="*" element={<MotionPage><PageNotFound /></MotionPage>} />
         </Routes>
       </AnimatePresence>

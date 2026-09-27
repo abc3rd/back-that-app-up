@@ -56,18 +56,23 @@ export default function usePreRoll() {
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
   useEffect(() => { silentRef.current = silentMode; }, [silentMode]);
 
-  const transcribeRecording = useCallback(async (rec) => {
+  const saveMoment = useCallback(async (rec) => {
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file: rec.blob });
-      const res = await base44.functions.invoke('transcribeRecording', { audioUrl: file_url });
-      const transcript = (res.data && res.data.transcript) || '';
-      if (transcript) {
-        const updated = { ...rec, transcript, meta: { ...rec.meta, transcript } };
-        await saveRecording(updated);
-        setRecordings((prev) => prev.map((r) => (r.id === rec.id ? updated : r)));
-      }
+      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: new File([rec.blob], rec.name, { type: 'audio/wav' }) });
+      await base44.entities.Moment.create({
+        name: rec.name,
+        timestamp: rec.timestamp,
+        trigger_type: rec.triggerType,
+        duration_ms: rec.durationMs,
+        peak_db: rec.peakDb,
+        location_label: rec.location?.locality || rec.location?.place || '',
+        tags: rec.tags || [],
+        audio_uri: file_uri,
+        transcript: '',
+        status: 'pending',
+      });
     } catch (e) {
-      // best-effort: transcription failure must not block the capture
+      // best-effort: workflow transcription failure must not block the capture
     }
   }, []);
 
@@ -141,13 +146,13 @@ export default function usePreRoll() {
       if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
       refresh();
       if (protectedCapture) backupToDrive(blob, rec.name, meta);
-      if (protectedCapture && effAiTranscription) transcribeRecording(rec);
+      if (protectedCapture) saveMoment(rec);
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       toast({ variant: 'destructive', description: 'Failed to save capture' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription, transcribeRecording, toast]);
+  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, saveMoment, toast]);
 
   const stopRec = useCallback(() => {
     recGenRef.current++; // invalidate any pending restart from a stale instance

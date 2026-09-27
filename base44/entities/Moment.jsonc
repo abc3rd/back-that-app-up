@@ -4,7 +4,15 @@
   "properties": {
     "description": {
       "type": "string",
-      "description": "A short note describing what the captured moment contains"
+      "description": "Short summary of the captured moment"
+    },
+    "name": {
+      "type": "string",
+      "description": "Filename of the captured clip"
+    },
+    "timestamp": {
+      "type": "number",
+      "description": "When the moment was captured, epoch ms"
     },
     "trigger_type": {
       "type": "string",
@@ -17,21 +25,43 @@
     },
     "duration_ms": {
       "type": "number",
-      "description": "Length of the captured clip in milliseconds"
+      "description": "Length of the clip in milliseconds"
+    },
+    "peak_db": {
+      "type": "number",
+      "description": "Peak audio level in dB"
     },
     "location_label": {
       "type": "string",
-      "description": "Reverse-geocoded place name where the moment was captured"
+      "description": "Place name where captured"
     },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "Searchable tags for the moment"
+      "description": "Searchable tags"
+    },
+    "audio_uri": {
+      "type": "string",
+      "description": "Private storage URI of the audio file"
+    },
+    "transcript": {
+      "type": "string",
+      "description": "Transcribed text of the audio"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "transcribing",
+        "done",
+        "failed"
+      ],
+      "description": "Transcription status"
     }
   },
   "required": [
-    "description"
+    "audio_uri"
   ]
 }
