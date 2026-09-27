@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, GraduationCap } from 'lucide-react';
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
@@ -32,6 +32,19 @@ export default function AccountSection() {
 
   return (
     <SettingSection title="Account" description="Account and data controls">
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-center gap-2 text-primary">
+          <GraduationCap className="h-4 w-4" />
+          <h3 className="font-medium">Setup guide</h3>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">New to the app? Walk through the quick setup and how-it-works explainer again.</p>
+        <button
+          onClick={() => { localStorage.removeItem('btau.onboarded'); window.location.href = '/'; }}
+          className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Replay setup guide
+        </button>
+      </div>
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
         <div className="flex items-center gap-2 text-destructive">
           <Trash2 className="h-4 w-4" />
