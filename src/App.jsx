@@ -24,6 +24,8 @@ const OAuthConsent = lazy(() => import('./pages/OAuthConsent'));
 const Settings = lazy(() => import('./pages/Settings'));
 const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 const Moments = lazy(() => import('./pages/Moments'));
 
 const Spinner = () => (
@@ -52,6 +54,8 @@ const AnimatedRoutes = () => {
             <Route path="/reset-password" element={<MotionPage><ResetPassword /></MotionPage>} />
             <Route path="/oauth-consent" element={<MotionPage><OAuthConsent /></MotionPage>} />
             <Route path="/about" element={<MotionPage><About /></MotionPage>} />
+            <Route path="/privacy" element={<MotionPage><Privacy /></MotionPage>} />
+            <Route path="/terms" element={<MotionPage><Terms /></MotionPage>} />
             <Route path="/contact" element={<MotionPage><Contact /></MotionPage>} />
             <Route path="*" element={<MotionPage><PageNotFound /></MotionPage>} />
           </Routes>

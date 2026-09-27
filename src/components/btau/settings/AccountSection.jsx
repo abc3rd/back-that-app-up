@@ -50,7 +50,7 @@ export default function AccountSection() {
           <Trash2 className="h-4 w-4" />
           <h3 className="font-medium">Delete Account</h3>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">Permanently removes your account and signs you out. Local captures in this browser are not affected.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Permanently deletes all of your saved Moments and account data, then signs you out. Local captures in this browser are not affected.</p>
         <AlertDialog open={open} onOpenChange={setOpen}>
           <AlertDialogTrigger asChild>
             <button className="mt-3 rounded-full bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground">Delete Account</button>
