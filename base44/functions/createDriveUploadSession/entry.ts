@@ -9,13 +9,17 @@ export default async function(req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const fileName = body.fileName;
-    const mimeType = body.mimeType || 'audio/wav';
+    const fileName = String(body.fileName || '');
+    const mimeType = 'audio/wav'; // privileged uploads are audio captures only
     const contentLength = Number(body.contentLength);
     const folderName = (body.folderName && String(body.folderName).trim()) || DEFAULT_FOLDER;
     const description = body.description ? String(body.description).slice(0, 5000) : undefined;
-    if (!fileName || !contentLength) {
-      return Response.json({ error: 'fileName and contentLength are required' }, { status: 400 });
+    const MAX_BYTES = 262144000; // 250 MB cap per upload
+    if (!/^btau_[\w.-]+\.wav$/.test(fileName)) {
+      return Response.json({ error: 'Invalid file name' }, { status: 400 });
+    }
+    if (!Number.isFinite(contentLength) || contentLength <= 0 || contentLength > MAX_BYTES) {
+      return Response.json({ error: 'Invalid or oversized file' }, { status: 400 });
     }
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
@@ -53,8 +57,7 @@ export default async function(req) {
       body: JSON.stringify(fileMeta),
     });
     if (!sessionRes.ok) {
-      const details = await sessionRes.text();
-      return Response.json({ error: 'Failed to create upload session', details }, { status: 502 });
+      return Response.json({ error: 'Failed to create upload session' }, { status: 502 });
     }
     const uploadUrl = sessionRes.headers.get('Location');
     if (!uploadUrl) return Response.json({ error: 'No upload URL returned' }, { status: 502 });
