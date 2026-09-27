@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { PLAN, planHas, FEATURES } from '@/lib/entitlements';
+import { useAuth } from '@/lib/AuthContext';
 
 const KEY = 'btau.settings.v1';
 const PLAN_KEY = 'btau.plan';
@@ -47,6 +48,8 @@ const load = () => {
 const SettingsContext = createContext(null);
 
 export function SettingsProvider({ children }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [plan, setPlanState] = useState(() => localStorage.getItem(PLAN_KEY) || PLAN.FREE);
   const [s, setS] = useState(load);
   const [paywallFeature, setPaywallFeature] = useState(null);
@@ -56,16 +59,16 @@ export function SettingsProvider({ children }) {
 
   const set = useCallback((patch) => setS((p) => ({ ...p, ...patch })), []);
   const setPlan = useCallback((p) => setPlanState(p), []);
-  const can = useCallback((id) => planHas(plan, id), [plan]);
+  const can = useCallback((id) => isAdmin || planHas(plan, id), [plan, isAdmin]);
   const openPaywall = useCallback((id) => setPaywallFeature(id || 'pro'), []);
   const closePaywall = useCallback(() => setPaywallFeature(null), []);
   const requirePro = useCallback((id) => {
-    if (planHas(plan, id)) return true;
+    if (can(id)) return true;
     setPaywallFeature(id);
     return false;
-  }, [plan]);
+  }, [can]);
 
-  const isPro = plan === PLAN.PRO;
+  const isPro = isAdmin || plan === PLAN.PRO;
 
   // Effective (entitlement-clamped) values used by the engine and UI.
   const effRewind = can(FEATURES.EXTENDED_PRE_ROLL) ? s.rewind : Math.min(s.rewind, 30);
