@@ -32,6 +32,7 @@ export default function usePreRoll() {
   const engineRef = useRef(null);
   const wakeRef = useRef(null);
   const recRef = useRef(null);
+  const recGenRef = useRef(0);
   const listeningRef = useRef(false);
   const voiceArmRef = useRef(voiceArm);
   const armRef = useRef(null);
@@ -149,6 +150,7 @@ export default function usePreRoll() {
   }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription, transcribeRecording, toast]);
 
   const stopRec = useCallback(() => {
+    recGenRef.current++; // invalidate any pending restart from a stale instance
     const r = recRef.current;
     recRef.current = null;
     try { r?.stop(); } catch {}
@@ -158,6 +160,7 @@ export default function usePreRoll() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
     stopRec();
+    const myGen = ++recGenRef.current;
     const rec = new SR();
     rec.continuous = true;
     rec.interimResults = true;
@@ -187,11 +190,18 @@ export default function usePreRoll() {
         toast({ variant: 'destructive', description: 'Voice recognition blocked. Check microphone permission.' });
         return;
       }
+      if (err === 'audio-capture') {
+        toast({ variant: 'destructive', description: 'No microphone found for voice recognition.' });
+        return;
+      }
       toast({ description: `Voice recognition error: ${err}` });
     };
     rec.onend = () => {
-      if (recWantedRef.current) {
-        setTimeout(() => { try { rec.start(); recRef.current = rec; } catch {} }, 300);
+      if (recWantedRef.current && recGenRef.current === myGen) {
+        setTimeout(() => {
+          if (recGenRef.current !== myGen || !recWantedRef.current) return;
+          try { rec.start(); recRef.current = rec; } catch {}
+        }, 300);
       }
     };
     try { rec.start(); recRef.current = rec; } catch {}
@@ -235,6 +245,13 @@ export default function usePreRoll() {
     if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
   };
   useEffect(() => { armRef.current = arm; }, [arm]);
+  // Start/stop the speech recognizer whenever voice-arm is on, so the phrase
+  // can arm the detector (not just save while already listening).
+  useEffect(() => {
+    if (voiceArm) { recWantedRef.current = true; startRec(); }
+    else { recWantedRef.current = false; stopRec(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceArm]);
   useEffect(() => {
     if (autoListen) armRef.current?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -275,8 +292,7 @@ export default function usePreRoll() {
     const next = !voiceArm;
     settings.setVoiceArm(next);
     voiceArmRef.current = next;
-    recWantedRef.current = next;
-    if (next) startRec(); else stopRec();
+    // recognition lifecycle is driven by the voiceArm effect below
   };
   const toggleSilent = () => {
     setSilentMode((prev) => {
