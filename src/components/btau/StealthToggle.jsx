@@ -9,7 +9,7 @@ export default function StealthToggle({ enabled, onToggle }) {
         <BellOff className="mt-0.5 h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
         <div>
           <p className="text-sm">Stealth mode</p>
-          <p className="text-xs text-muted-foreground">Hide the running-status reminder notification</p>
+          <p className="text-sm text-muted-foreground">Hide the running-status reminder notification</p>
         </div>
       </div>
       <Switch checked={enabled} onCheckedChange={onToggle} />

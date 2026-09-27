@@ -9,7 +9,7 @@ export default function ThresholdControl({ value, onChange }) {
       <div className="mb-4 flex items-baseline justify-between">
         <div>
           <p className="text-sm">Trigger threshold</p>
-          <p className="text-xs text-muted-foreground">{hint(value)}</p>
+          <p className="text-sm text-muted-foreground">{hint(value)}</p>
         </div>
         <span className="font-mono text-lg tabular-nums">{value} dB</span>
       </div>

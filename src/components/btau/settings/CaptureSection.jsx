@@ -13,12 +13,12 @@ export default function CaptureSection() {
     <SettingSection title="Capture" description="How the rolling buffer turns into a saved capture">
       <div>
         <p className="text-sm">Pre-roll duration</p>
-        <p className="mb-3 text-xs text-muted-foreground">Recent audio kept before a trigger</p>
+        <p className="mb-3 text-sm text-muted-foreground">Recent audio kept before a trigger</p>
         <RewindPicker value={s.effRewind} onChange={s.setRewind} />
       </div>
       <div>
         <p className="text-sm">Post-roll duration</p>
-        <p className="mb-3 text-xs text-muted-foreground">Audio kept after a trigger</p>
+        <p className="mb-3 text-sm text-muted-foreground">Audio kept after a trigger</p>
         <PostRollPicker value={s.effPostRoll} onChange={s.setPostRoll} />
       </div>
       <SettingRow title="Extend on second trigger" description="A second trigger during post-roll extends the capture">
@@ -27,7 +27,7 @@ export default function CaptureSection() {
       <SettingRow title="Trigger cooldown" description="Minimum gap between voice triggers">
         <div className="flex items-center gap-2">
           <Slider value={[s.triggerCooldown]} min={0} max={10} step={1} onValueChange={(a) => s.setTriggerCooldown(a[0])} className="w-28" />
-          <span className="w-10 text-right font-mono text-xs">{s.triggerCooldown}s</span>
+          <span className="w-10 text-right font-mono text-sm">{s.triggerCooldown}s</span>
         </div>
       </SettingRow>
       <SettingRow title="Prevent overlapping captures" description="One capture at a time (always enforced)">

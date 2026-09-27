@@ -28,17 +28,17 @@ export default function ArcSection() {
   return (
     <SettingSection title="ARC & Devices" description="Local-first storage with optional multi-device sync">
       <SettingRow title="ARC account" description={account.connected ? account.email : 'Not connected'}>
-        <span className="text-xs text-muted-foreground">{account.connected ? 'Linked' : 'Local-only'}</span>
+        <span className="text-sm text-muted-foreground">{account.connected ? 'Linked' : 'Local-only'}</span>
       </SettingRow>
       <SettingRow title="This device" description={device.id}>
-        <span className="text-xs text-muted-foreground">{device.name}</span>
+        <span className="text-sm text-muted-foreground">{device.name}</span>
       </SettingRow>
       <div>
         <p className="text-sm">Authorized devices</p>
         {authorized.length === 0 ? (
-          <p className="mt-1 text-xs text-muted-foreground">No other devices linked.</p>
+          <p className="mt-1 text-sm text-muted-foreground">No other devices linked.</p>
         ) : (
-          <ul className="mt-1 space-y-1 text-xs">{authorized.map((d) => <li key={d.id}>{d.name}</li>)}</ul>
+          <ul className="mt-1 space-y-1 text-sm">{authorized.map((d) => <li key={d.id}>{d.name}</li>)}</ul>
         )}
       </div>
       <SettingRow title="Device pairing" description="Pair a new device (requires ARC)">
@@ -56,7 +56,7 @@ export default function ArcSection() {
       <SettingRow title="Device-to-device transfer" description="Send a capture to another device">
         <Button size="sm" variant="secondary" onClick={transfer}>Transfer</Button>
       </SettingRow>
-      <p className="text-xs text-muted-foreground">ARC backend is not yet connected. All data stays local.</p>
+      <p className="text-sm text-muted-foreground">ARC backend is not yet connected. All data stays local.</p>
     </SettingSection>
   );
 }

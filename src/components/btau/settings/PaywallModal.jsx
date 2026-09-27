@@ -25,7 +25,7 @@ export default function PaywallModal() {
           <Button variant="secondary" onClick={s.closePaywall}>Maybe later</Button>
           <Button onClick={() => { s.setPlan(PLAN.PRO); s.closePaywall(); }}>Enable Pro preview</Button>
         </DialogFooter>
-        <p className="text-xs text-muted-foreground">Billing is not yet connected. Preview unlocks Pro locally without payment.</p>
+        <p className="text-sm text-muted-foreground">Billing is not yet connected. Preview unlocks Pro locally without payment.</p>
       </DialogContent>
     </Dialog>
   );

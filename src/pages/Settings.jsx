@@ -9,6 +9,7 @@ import AiSection from '@/components/btau/settings/AiSection';
 import SubscriptionSection from '@/components/btau/settings/SubscriptionSection';
 import AccountSection from '@/components/btau/settings/AccountSection';
 import PaywallModal from '@/components/btau/settings/PaywallModal';
+import BottomTabBar from '@/components/btau/BottomTabBar';
 
 export default function Settings() {
   return (
@@ -17,7 +18,7 @@ export default function Settings() {
         <BackButton />
         <h1 className="font-display text-2xl">Settings</h1>
       </header>
-      <main className="mx-auto max-w-md px-6 py-8">
+      <main className="mx-auto max-w-md px-6 pt-8 pb-[max(7rem,env(safe-area-inset-bottom))]">
         <div className="flex flex-col gap-6">
           <SubscriptionSection />
           <CaptureSection />
@@ -30,6 +31,7 @@ export default function Settings() {
         </div>
       </main>
       <PaywallModal />
+      <BottomTabBar />
     </div>
   );
 }

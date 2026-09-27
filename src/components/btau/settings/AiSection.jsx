@@ -19,7 +19,7 @@ export default function AiSection() {
           <Button size="sm" variant="secondary" disabled>Coming soon</Button>
         </SettingRow>
       ))}
-      <p className="text-xs text-muted-foreground">AI features are feature-flagged and will not return fake results until the ARC AI Router exists.</p>
+      <p className="text-sm text-muted-foreground">AI features are feature-flagged and will not return fake results until the ARC AI Router exists.</p>
     </SettingSection>
   );
 }

@@ -23,7 +23,7 @@ export default function ArmControl({ listening, onArm, onDisarm }) {
         className={`relative flex h-44 w-44 flex-col items-center justify-center gap-2 rounded-full border transition-colors duration-500 ${listening ? 'border-primary/70 bg-primary/10 text-primary glow-cyan' : 'border-border bg-card text-foreground hover:border-foreground/30'}`}
       >
         {listening ? <Mic className="h-8 w-8" strokeWidth={1.5} /> : <MicOff className="h-8 w-8" strokeWidth={1.5} />}
-        <span className="text-xs uppercase tracking-[0.24em]">{listening ? 'Tap to stop' : 'Arm'}</span>
+        <span className="text-sm uppercase tracking-[0.24em]">{listening ? 'Tap to stop' : 'Arm'}</span>
       </motion.button>
     </div>
   );

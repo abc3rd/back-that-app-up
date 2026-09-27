@@ -6,7 +6,7 @@ export default function MaxAutoControl({ value, onChange }) {
     <div className="flex items-center justify-between gap-4">
       <div>
         <p className="text-sm">Max auto captures</p>
-        <p className="text-xs text-muted-foreground">Oldest unprotected spike capture is deleted beyond this</p>
+        <p className="text-sm text-muted-foreground">Oldest unprotected spike capture is deleted beyond this</p>
       </div>
       <div className="flex items-center gap-2">
         <button aria-label="Decrease" onClick={() => onChange(Math.max(1, value - 1))} className="flex h-11 w-11 select-none items-center justify-center rounded-full bg-secondary text-foreground">

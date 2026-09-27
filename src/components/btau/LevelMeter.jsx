@@ -8,9 +8,9 @@ export default function LevelMeter({ db, threshold, active }) {
     <div className="w-full">
       <div className="mb-3 flex items-end justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Ambient level</span>
+          <span className="text-sm uppercase tracking-[0.24em] text-muted-foreground">Ambient level</span>
           {active && (
-            <span className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+            <span className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-sm font-medium text-primary">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
               LIVE
             </span>
@@ -31,10 +31,10 @@ export default function LevelMeter({ db, threshold, active }) {
         </div>
         <div className="absolute -top-1.5 flex -translate-x-1/2 flex-col items-center" style={{ left: `${threshold}%` }}>
           <div className="h-5 w-0.5 bg-primary" />
-          <span className="mt-1 font-mono text-xs text-primary">{threshold}</span>
+          <span className="mt-1 font-mono text-sm text-primary">{threshold}</span>
         </div>
       </div>
-      <div className="mt-2 flex justify-between font-mono text-xs text-muted-foreground">
+      <div className="mt-2 flex justify-between font-mono text-sm text-muted-foreground">
         <span>0</span>
         <span>50</span>
         <span>100 dB</span>

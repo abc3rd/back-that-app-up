@@ -14,6 +14,7 @@ import PullToRefresh from '@/components/PullToRefresh';
 import AutoCaptureToggle from '@/components/btau/AutoCaptureToggle';
 import PostRollPicker from '@/components/btau/PostRollPicker';
 import MaxAutoControl from '@/components/btau/MaxAutoControl';
+import BottomTabBar from '@/components/btau/BottomTabBar';
 
 export default function Home() {
   const p = usePreRoll();
@@ -22,7 +23,7 @@ export default function Home() {
   return (
     <PullToRefresh onRefresh={p.refresh}>
       <div className="min-h-screen bg-background text-foreground">
-        <main className="mx-auto flex max-w-md flex-col gap-12 px-6 pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
+        <main className="mx-auto flex max-w-md flex-col gap-12 px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
           <Header listening={p.listening} capturing={p.capturing} />
           {p.error && (
             <div className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
@@ -55,6 +56,7 @@ export default function Home() {
           </p>
         </main>
       </div>
+      <BottomTabBar />
     </PullToRefresh>
   );
 }

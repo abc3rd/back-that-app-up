@@ -19,7 +19,7 @@ export default function SaveButton({ listening, capturing, rewindLabel, onSave }
         <Rewind className="h-5 w-5" strokeWidth={1.75} />
         Back That App Up!
       </motion.button>
-      <p className="text-xs text-muted-foreground">{hint}</p>
+      <p className="text-sm text-muted-foreground">{hint}</p>
     </div>
   );
 }

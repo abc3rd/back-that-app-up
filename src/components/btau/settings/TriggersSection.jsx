@@ -40,7 +40,7 @@ export default function TriggersSection() {
             <>
               <div className="mb-2 flex flex-wrap gap-1">
                 {s.customPhrases.map((p, i) => (
-                  <span key={i} className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs">
+                  <span key={i} className="flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-sm">
                     {p}
                     <button onClick={() => removePhrase(i)} aria-label="Remove phrase"><X className="h-3 w-3" /></button>
                   </span>
@@ -52,7 +52,7 @@ export default function TriggersSection() {
               </div>
             </>
           ) : (
-            <p className="text-xs text-muted-foreground">Pro feature</p>
+            <p className="text-sm text-muted-foreground">Pro feature</p>
           )}
         </div>
       </SettingRow>
@@ -62,19 +62,19 @@ export default function TriggersSection() {
       <SettingRow title="Adjustable dB threshold" description={`Trigger level: ${s.threshold} dB`}>
         <div className="flex items-center gap-2">
           <Slider value={[s.threshold]} min={40} max={100} step={1} onValueChange={(a) => s.setThreshold(a[0])} className="w-28" />
-          <span className="w-10 text-right font-mono text-xs">{s.threshold}</span>
+          <span className="w-10 text-right font-mono text-sm">{s.threshold}</span>
         </div>
       </SettingRow>
       <SettingRow title="Sustained sound duration" description="Sound must hold above threshold" pro locked={!canSust}>
         <div className="flex items-center gap-2">
           <Slider value={[s.effSustainedDuration]} min={0} max={3000} step={100} onValueChange={(a) => s.setSustainedDuration(a[0])} className="w-28" disabled={!canSust} />
-          <span className="w-14 text-right font-mono text-xs">{s.effSustainedDuration}ms</span>
+          <span className="w-14 text-right font-mono text-sm">{s.effSustainedDuration}ms</span>
         </div>
       </SettingRow>
       <SettingRow title="Spike cooldown" description="Gap between automatic spike captures" pro locked={!canSpikeCd}>
         <div className="flex items-center gap-2">
           <Slider value={[s.effSpikeCooldown]} min={1} max={30} step={1} onValueChange={(a) => s.setSpikeCooldown(a[0])} className="w-28" disabled={!canSpikeCd} />
-          <span className="w-10 text-right font-mono text-xs">{s.effSpikeCooldown}s</span>
+          <span className="w-10 text-right font-mono text-sm">{s.effSpikeCooldown}s</span>
         </div>
       </SettingRow>
     </SettingSection>

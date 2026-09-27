@@ -57,8 +57,8 @@ export default function RecordingItem({ rec, fresh, onDelete, onRename, onProtec
           ) : (
             <p className="truncate text-sm font-medium">{label}</p>
           )}
-          <p className="mt-0.5 font-mono text-xs text-foreground/70">{format(rec.timestamp, 'MMM d, yyyy · HH:mm:ss')}</p>
-          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+          <p className="mt-0.5 font-mono text-sm text-foreground/70">{format(rec.timestamp, 'MMM d, yyyy · HH:mm:ss')}</p>
+          <p className="mt-0.5 truncate font-mono text-sm text-muted-foreground">
             {(rec.durationMs / 1000).toFixed(1)}s · {Math.round(rec.sizeBytes / 1024)} KB · {rec.peakDb.toFixed(0)} dB · {triggerLabel}{isTemporary ? ' · temporary' : ''}
           </p>
         </div>

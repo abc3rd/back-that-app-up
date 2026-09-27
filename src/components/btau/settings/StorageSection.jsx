@@ -46,17 +46,17 @@ export default function StorageSection() {
       <SettingRow title="Temporary retention" description="Auto-delete temp captures older than this" pro locked={!canRet}>
         <div className="flex items-center gap-2">
           <Slider value={[s.effTempRetentionMinutes]} min={0} max={120} step={5} onValueChange={(a) => s.setTempRetentionMinutes(a[0])} className="w-28" disabled={!canRet} />
-          <span className="w-16 text-right font-mono text-xs">{s.effTempRetentionMinutes === 0 ? 'off' : `${s.effTempRetentionMinutes}m`}</span>
+          <span className="w-16 text-right font-mono text-sm">{s.effTempRetentionMinutes === 0 ? 'off' : `${s.effTempRetentionMinutes}m`}</span>
         </div>
       </SettingRow>
       <SettingRow title="Auto-delete oldest temporary" description="Beyond the limit, the oldest unprotected capture is removed">
-        <span className="text-xs text-primary">On</span>
+        <span className="text-sm text-primary">On</span>
       </SettingRow>
       <SettingRow title="Protected captures" description="Manual & voice captures are never auto-deleted">
-        <span className="text-xs text-primary">Guaranteed</span>
+        <span className="text-sm text-primary">Guaranteed</span>
       </SettingRow>
       <SettingRow title="Storage used" description={est ? `${fmt(est.usage)} of ${fmt(est.quota)}` : 'Calculating…'}>
-        <span className="font-mono text-xs">{est ? fmt(est.usage) : '—'}</span>
+        <span className="font-mono text-sm">{est ? fmt(est.usage) : '—'}</span>
       </SettingRow>
       <div className="flex flex-col gap-2 pt-2">
         <Button variant="secondary" onClick={clearTemp}>Delete temporary captures</Button>

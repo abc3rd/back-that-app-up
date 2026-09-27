@@ -9,7 +9,7 @@ export default function SettingRow({ title, description, children, pro, locked }
           <p className="text-sm">{title}</p>
           {pro && <ProTag locked={locked} />}
         </div>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       <div className="shrink-0">{children}</div>
     </div>

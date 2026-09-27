@@ -9,7 +9,7 @@ export default function VoiceTrigger({ enabled, supported, heard, onToggle }) {
         <MicVocal className={`mt-0.5 h-5 w-5 ${heard ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.5} />
         <div>
           <p className="text-sm">Voice arm</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {supported ? <>Say “Back That App Up” to start — say it again while listening to save the loop</> : 'Not supported in this browser'}
           </p>
         </div>

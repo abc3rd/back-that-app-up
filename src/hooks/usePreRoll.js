@@ -88,15 +88,21 @@ export default function usePreRoll() {
       temporary: !protectedCapture,
       blob,
     };
-    await saveRecording(rec);
+    setRecordings((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
     setCapturing(false);
     setLastSavedId(rec.id);
-    if (!protectedCapture) await cleanupTemporary(maxAuto);
-    if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
-    refresh();
-    if (protectedCapture) backupToDrive(blob, rec.name);
+    try {
+      await saveRecording(rec);
+      if (!protectedCapture) await cleanupTemporary(maxAuto);
+      if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
+      refresh();
+      if (protectedCapture) backupToDrive(blob, rec.name);
+    } catch (e) {
+      setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
+      toast({ variant: 'destructive', description: 'Failed to save capture' });
+    }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes]);
+  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, toast]);
 
   const stopRec = useCallback(() => {
     const r = recRef.current;
@@ -238,8 +244,13 @@ export default function usePreRoll() {
     const rec = recordings.find((r) => r.id === id);
     if (!rec) return;
     const updated = { ...rec, label };
-    await saveRecording(updated);
     setRecordings((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    try {
+      await saveRecording(updated);
+    } catch (e) {
+      setRecordings((prev) => prev.map((r) => (r.id === id ? rec : r)));
+      toast({ variant: 'destructive', description: 'Rename failed' });
+    }
   };
   const protect = async (id) => {
     const updated = await protectRecording(id);

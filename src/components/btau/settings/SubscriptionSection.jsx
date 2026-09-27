@@ -15,13 +15,13 @@ export default function SubscriptionSection() {
       <div className="grid grid-cols-2 gap-3">
         <div className={`rounded-2xl border p-4 ${!s.isPro ? 'border-primary bg-primary/5' : 'border-border'}`}>
           <p className="text-sm font-medium">Free</p>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
             {FREE.map((f) => <li key={f} className="flex gap-1"><Check className="h-3 w-3 text-primary" /> {f}</li>)}
           </ul>
         </div>
         <div className={`rounded-2xl border p-4 ${s.isPro ? 'border-accent bg-accent/5' : 'border-border'}`}>
           <p className="text-sm font-medium">Pro</p>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
             {PRO.map((f) => <li key={f} className="flex gap-1"><Check className="h-3 w-3 text-accent" /> {f}</li>)}
           </ul>
         </div>
@@ -33,7 +33,7 @@ export default function SubscriptionSection() {
           <Button onClick={() => s.setPlan(PLAN.PRO)}>Enable Pro preview</Button>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">Billing is not yet connected. This preview toggle unlocks Pro features locally without payment.</p>
+      <p className="text-sm text-muted-foreground">Billing is not yet connected. This preview toggle unlocks Pro features locally without payment.</p>
     </SettingSection>
   );
 }
