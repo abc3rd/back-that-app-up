@@ -7,7 +7,7 @@ const PHRASE_DEFAULT = 'back that app up';
 
 const DEFAULTS = {
   rewind: 30,
-  postRoll: 10,
+  postRoll: 30,
   extendOnSecondTrigger: false,
   triggerCooldown: 2,
   preventOverlaps: true,
@@ -69,7 +69,7 @@ export function SettingsProvider({ children }) {
 
   // Effective (entitlement-clamped) values used by the engine and UI.
   const effRewind = can(FEATURES.EXTENDED_PRE_ROLL) ? s.rewind : Math.min(s.rewind, 30);
-  const effPostRoll = can(FEATURES.EXTENDED_POST_ROLL) ? s.postRoll : Math.min(s.postRoll, 10);
+  const effPostRoll = can(FEATURES.EXTENDED_POST_ROLL) ? s.postRoll : Math.min(s.postRoll, 30);
   const effAutoCapture = can(FEATURES.AUTO_CAPTURE) && s.autoCapture;
   const effQuality = can(FEATURES.HIGH_QUALITY) ? s.quality : 'standard';
   const effPhrase = can(FEATURES.CUSTOM_PHRASE) ? s.phrase : PHRASE_DEFAULT;
@@ -86,7 +86,7 @@ export function SettingsProvider({ children }) {
     set({ rewind: v });
   };
   const setPostRoll = (v) => {
-    if (v > 10 && !can(FEATURES.EXTENDED_POST_ROLL)) { openPaywall(FEATURES.EXTENDED_POST_ROLL); set({ postRoll: 10 }); return; }
+    if (v > 30 && !can(FEATURES.EXTENDED_POST_ROLL)) { openPaywall(FEATURES.EXTENDED_POST_ROLL); set({ postRoll: 30 }); return; }
     set({ postRoll: v });
   };
   const setExtendOnSecondTrigger = (v) => set({ extendOnSecondTrigger: v });
