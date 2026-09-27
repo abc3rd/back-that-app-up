@@ -255,10 +255,22 @@ export default function usePreRoll() {
     }
   };
   const protect = async (id) => {
-    const updated = await protectRecording(id);
-    if (updated) {
-      setRecordings((prev) => prev.map((r) => (r.id === id ? updated : r)));
-      backupToDrive(updated.blob, updated.name);
+    const rec = recordings.find((r) => r.id === id);
+    if (!rec) return;
+    const updated = { ...rec, protected: true };
+    setRecordings((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    try {
+      const saved = await protectRecording(id);
+      if (saved) {
+        setRecordings((prev) => prev.map((r) => (r.id === id ? saved : r)));
+        backupToDrive(saved.blob, saved.name);
+      } else {
+        setRecordings((prev) => prev.map((r) => (r.id === id ? rec : r)));
+        toast({ variant: 'destructive', description: 'Failed to protect capture' });
+      }
+    } catch (e) {
+      setRecordings((prev) => prev.map((r) => (r.id === id ? rec : r)));
+      toast({ variant: 'destructive', description: 'Failed to protect capture' });
     }
   };
   const deleteAllTemp = async () => {
