@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back That App Up! - Ambient, Privacy-First Audio Capture</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e1e7fe',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                            accent: '#06b6d4',
+                            emerald: '#10b981',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 15px rgba(99, 102, 241, 0.2)' },
+                            '100%': { boxShadow: '0 0 35px rgba(99, 102, 241, 0.6)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-gradient-gold {
+            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans selection:bg-brand-500 selection:text-white antialiased overflow-x-hidden">
+
+    <!-- NAVIGATION BAR -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-slate-800/80 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-400 p-0.5 shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid font-bold fa-rotate-left text-brand-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <span class="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
+                        Back That App Up<span class="text-brand-400">!</span>
+                    </span>
+                    <span class="text-[10px] uppercase tracking-widest text-slate-400 font-mono block -mt-1">Ambient Safety Net</span>
+                </div>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+                <a href="#simulator" class="hover:text-white transition-colors">Live Demo</a>
+                <a href="#features" class="hover:text-white transition-colors">Features</a>
+                <a href="#use-cases" class="hover:text-white transition-colors">Who It's For</a>
+                <a href="#privacy" class="hover:text-white transition-colors">Privacy Engine</a>
+                <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+            </nav>
+
+            <!-- CTA Actions -->
+            <div class="flex items-center gap-4">
+                <button onclick="openPreorderModal()" class="relative inline-flex items-center justify-center p-0.5 overflow-hidden text-sm font-semibold text-white rounded-xl group bg-gradient-to-br from-brand-500 to-cyan-400 group-hover:from-brand-500 group-hover:to-cyan-400 hover:text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all">
+                    <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-slate-950 rounded-[10px] group-hover:bg-opacity-0 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-brand-400 group-hover:text-white transition-colors"></i>
+                        <span>Get Early Access</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="relative pt-32 pb-20 md:pt-44 md:pb-32 overflow-hidden">
+        <!-- Background Ambient Glow -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div class="absolute top-1/3 right-10 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center max-w-3xl mx-auto">
+                
+                <!-- Badge -->
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-300 text-xs font-mono font-medium mb-8">
+                    <span class="w-2 h-2 rounded-full bg-brand-400 animate-ping"></span>
+                    <span class="text-brand-300">Privacy-First Audio Engine v2.4 Live</span>
+                </div>
+
+                <!-- Main Heading -->
+                <h1 class="text-4xl sm:text-6xl font-black text-white tracking-tight leading-[1.1] mb-6">
+                    Never wish you hit <br>
+                    <span class="text-gradient">record 3 minutes ago</span> again.
+                </h1>
+
+                <!-- Subtitle -->
+                <p class="text-lg sm:text-xl text-slate-300 font-normal leading-relaxed mb-10">
+                    <strong class="text-white font-semibold">Back That App Up!</strong> maintains a continuous, RAM-only audio buffer on your device. The instant a loud moment happens or you speak your wake phrase, it saves the preceding minutes before they disappear into thin air.
+                </p>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="#simulator" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-brand-600 to-cyan-500 text-white font-bold text-base shadow-xl shadow-brand-600/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Test Live Simulator</span>
+                    </a>
+                    <button onclick="openPreorderModal()" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-card hover:bg-slate-800/80 text-slate-200 hover:text-white font-semibold text-base border border-slate-700/80 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                        <span>Claim Lifetime License</span>
+                    </button>
+                </div>
+
+                <!-- Trust Callouts -->
+                <div class="mt-12 flex flex-wrap items-center justify-center gap-8 text-xs font-mono text-slate-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-brand-400 text-sm"></i>
+                        <span>Zero Disk Writes Until Triggered</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-lock text-emerald-400 text-sm"></i>
+                        <span>100% On-Device Processing</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-brands fa-google-drive text-cyan-400 text-sm"></i>
+                        <span>Optional Cloud Sync</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- GET THE APP / ACCESS LINKS -->
+    <section id="get-the-app" class="py-14 relative bg-slate-900/40 border-y border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8">
+                <span class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold block mb-2"><i class="fa-solid fa-circle-down mr-1"></i> Production Release</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Get Back That App Up!</h2>
+                <p class="mt-2 text-slate-400 text-sm max-w-xl mx-auto">Now live in production. Install the native Android app from Google Play, or launch the Progressive Web App instantly in your browser.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="https://play.google.com/store/apps/dev?id=8779278242798906313&hl=en_US" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-brand-600 to-cyan-500 text-white font-bold text-base shadow-xl shadow-brand-600/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+                    <i class="fa-brands fa-google-play text-lg"></i>
+                    <span>Get it on Google Play</span>
+                </a>
+                <a href="https://back-that-app-up.syncloudconnect.store" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-card hover:bg-slate-800/80 text-slate-200 hover:text-white font-semibold text-base border border-slate-700/80 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-globe text-cyan-400"></i>
+                    <span>Launch the PWA</span>
+                </a>
+                <a href="https://back-that-app-up.syncloudconnect.store/about" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-card hover:bg-slate-800/80 text-slate-200 hover:text-white font-semibold text-base border border-slate-700/80 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-info text-brand-400"></i>
+                    <span>About</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- INTERACTIVE AUDIO SIMULATOR SECTION -->
+    <section id="simulator" class="py-20 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-2xl relative overflow-hidden">
+                
+                <!-- Section Header -->
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-slate-800">
+                    <div>
+                        <div class="flex items-center gap-2 text-brand-400 font-mono text-xs uppercase tracking-wider mb-2">
+                            <i class="fa-solid fa-wave-square"></i> Live Interactive Sandbox
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Experience the Rolling Buffer</h2>
+                    </div>
+
+                    <!-- Simulator Controls Header -->
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-3">
+                            <span class="text-xs text-slate-400 font-mono uppercase">Buffer Status:</span>
+                            <span id="bufferStatusText" class="text-xs font-bold font-mono text-emerald-400 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE (RAM ONLY)
+                            </span>
+                        </div>
+                        
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-3">
+                            <span class="text-xs text-slate-400 font-mono uppercase">Wake Phrase:</span>
+                            <span class="text-xs font-bold font-mono text-brand-300">"Back That Up!"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulator Core Body -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+                    
+                    <!-- Left: Waveform & Trigger Controls (8 Cols) -->
+                    <div class="lg:col-span-8 flex flex-col justify-between space-y-6">
+                        
+                        <!-- Visualizer Canvas Container -->
+                        <div class="relative bg-slate-950/90 rounded-2xl p-6 border border-slate-800/80 shadow-inner overflow-hidden">
+                            
+                            <!-- Canvas Top Overlay -->
+                            <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-3">
+                                <span><i class="fa-solid fa-clock text-slate-500 mr-1"></i> -05:00 MIN (BUFFER)</span>
+                                <span class="text-brand-400 font-semibold" id="timeCounter">LIVE NOW (00:00)</span>
+                            </div>
+
+                            <!-- Canvas Waveform -->
+                            <div class="relative h-48 w-full flex items-center justify-center">
+                                <canvas id="waveformCanvas" class="w-full h-full block"></canvas>
+                                
+                                <!-- Floating Trigger Overlay Flash -->
+                                <div id="triggerFlash" class="absolute inset-0 bg-brand-500/20 pointer-events-none opacity-0 transition-opacity duration-300 rounded-xl flex items-center justify-center">
+                                    <div class="bg-brand-600 text-white font-mono text-sm px-4 py-2 rounded-lg shadow-2xl border border-brand-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-bolt text-yellow-300"></i>
+                                        <span id="triggerFlashText">TRIGGER DETECTED: SAVING BUFFER...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Canvas Footer Timeline Info -->
+                            <div class="flex items-center justify-between text-[11px] font-mono text-slate-500 mt-2 border-t border-slate-900 pt-3">
+                                <span>RAM Memory Allocation: <strong class="text-slate-300">24.2 MB</strong></span>
+                                <span>Decibel Floor: <strong id="dbValueText" class="text-slate-300">42 dB</strong></span>
+                                <span>Disk Writes: <strong id="diskWritesCount" class="text-emerald-400">0 Bytes (Protected)</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Trigger Action Buttons -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <button onclick="triggerSimulatedSpike()" class="px-4 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-white text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 group shadow-md">
+                                <i class="fa-solid fa-volume-high text-rose-400 group-hover:scale-110 transition-transform"></i>
+                                <span>Simulate Loud Spike (>85dB)</span>
+                            </button>
+
+                            <button onclick="triggerWakePhrase()" class="px-4 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-white text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 group shadow-md">
+                                <i class="fa-solid fa-microphone text-brand-400 group-hover:scale-110 transition-transform"></i>
+                                <span>Say "Back That Up!"</span>
+                            </button>
+
+                            <button onclick="triggerManualSave()" class="px-4 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold font-mono transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/30">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span>Manual Retro-Save</span>
+                            </button>
+                        </div>
+
+                        <!-- Sliders Controls -->
+                        <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+                            <div>
+                                <div class="flex justify-between text-slate-300 font-mono mb-2">
+                                    <label for="bufferLength">Rolling Buffer Window:</label>
+                                    <span id="bufferLengthVal" class="text-brand-400 font-bold">5 Minutes</span>
+                                </div>
+                                <input id="bufferLength" type="range" min="1" max="15" value="5" class="w-full accent-brand-500 bg-slate-800 rounded-lg cursor-pointer" oninput="updateBufferSlider(this.value)">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-slate-300 font-mono mb-2">
+                                    <label for="spikeSensitivity">Spike Trigger Sensitivity:</label>
+                                    <span id="spikeVal" class="text-brand-400 font-bold">78 dB</span>
+                                </div>
+                                <input id="spikeSensitivity" type="range" min="60" max="100" value="78" class="w-full accent-brand-500 bg-slate-800 rounded-lg cursor-pointer" oninput="updateSpikeSlider(this.value)">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right: Saved Clip Feed & Mock AI Transcript (4 Cols) -->
+                    <div class="lg:col-span-4 bg-slate-950/80 rounded-2xl p-5 border border-slate-800/90 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                                <span class="text-xs font-mono text-slate-300 uppercase font-bold flex items-center gap-2">
+                                    <i class="fa-solid fa-box-archive text-brand-400"></i> Captured Clips
+                                </span>
+                                <span id="clipCountBadge" class="bg-brand-500/20 text-brand-300 text-[10px] font-mono px-2 py-0.5 rounded-full border border-brand-500/30">0 Clips</span>
+                            </div>
+
+                            <!-- Clips List Box -->
+                            <div id="clipsFeed" class="mt-4 space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                                <!-- Empty state -->
+                                <div id="emptyClipsNotice" class="text-center py-10 text-slate-500 text-xs font-mono">
+                                    <i class="fa-solid fa-waveform text-2xl text-slate-700 mb-2 block"></i>
+                                    No clips saved yet.<br>Click a trigger button on the left to capture the past 5 minutes!
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Simulated AI Transcription Widget -->
+                        <div class="mt-6 pt-4 border-t border-slate-800">
+                            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-2">
+                                <span class="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> On-Device AI Transcript
+                                </span>
+                                <span class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">Whisper-Lite</span>
+                            </div>
+                            <div id="transcriptBox" class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 font-mono min-h-[90px] leading-relaxed">
+                                <span class="text-slate-600 italic">Waiting for clip capture event to generate dynamic transcript preview...</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES GRID SECTION -->
+    <section id="features" class="py-20 relative bg-slate-900/30 border-y border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <h2 class="text-xs font-mono uppercase tracking-widest text-brand-400 mb-2 font-bold">Uncompromising Engineering</h2>
+                <p class="text-3xl font-extrabold text-white sm:text-4xl">Built for spontaneous minds & absolute privacy</p>
+                <p class="mt-4 text-slate-400 text-base">Designed to run silently in the background of your daily life without consuming battery, storage, or intruding on your private conversations.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- Feature 1 -->
+                <div class="glass-card p-8 rounded-2xl hover:border-brand-500/50 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 text-xl mb-6 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-memory"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">RAM-Only Buffer Engine</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Audio continuously writes to a volatile rolling memory loop and discards itself every few minutes. Zero data touches your SSD or flash storage until a trigger fires.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="glass-card p-8 rounded-2xl hover:border-brand-500/50 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl mb-6 group-hover:scale-110 group-hover:bg-cyan-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Automatic Spike Detection</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Set your custom decibel threshold. Sudden laughter, unexpected applause, or a sudden burst of sound automatically saves the context around it.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="glass-card p-8 rounded-2xl hover:border-brand-500/50 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl mb-6 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-ear-listen"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Hands-Free Voice Arming</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Say your custom wake phrase like <em>"Back That Up!"</em> or <em>"Save That Quote!"</em> to retroactively secure what was just said without pulling out your phone.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="glass-card p-8 rounded-2xl hover:border-brand-500/50 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl mb-6 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">AI On-Device Transcription</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Turn saved audio clips into indexed, searchable text instantly. Search your library by the exact words spoken weeks ago with full keyword matching.</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="glass-card p-8 rounded-2xl hover:border-brand-500/50 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl mb-6 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Rich Context Metadata</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Every saved moment automatically attaches exact timestamps, trigger method tags, decibel peaks, and optional GPS coordinates for instant context retrieval.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="glass-card p-8 rounded-2xl hover:border-brand-500/50 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-xl mb-6 group-hover:scale-110 group-hover:bg-rose-500 group-hover:text-white transition-all">
+                        <i class="fa-brands fa-google-drive"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Zero-Knowledge Cloud Backup</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">Keep files strictly local or opt to auto-sync encrypted copies to your personal Google Drive or preferred cloud storage solution effortlessly.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- USE CASES INTERACTIVE SWITCHER -->
+    <section id="use-cases" class="py-20 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <h2 class="text-xs font-mono uppercase tracking-widest text-brand-400 mb-2 font-bold">Tailored For Spontaneity</h2>
+                <p class="text-3xl font-extrabold text-white sm:text-4xl">Who relies on Back That App Up!</p>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex flex-wrap items-center justify-center gap-2 mb-10">
+                <button onclick="switchUseCase('journalists')" id="tab-journalists" class="usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-brand-600 text-white border border-brand-500 shadow-lg">
+                    <i class="fa-solid fa-newspaper mr-2"></i>Journalists
+                </button>
+                <button onclick="switchUseCase('podcasters')" id="tab-podcasters" class="usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 hover:text-white">
+                    <i class="fa-solid fa-podcast mr-2"></i>Podcasters
+                </button>
+                <button onclick="switchUseCase('musicians')" id="tab-musicians" class="usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 hover:text-white">
+                    <i class="fa-solid fa-guitar mr-2"></i>Musicians & Creators
+                </button>
+                <button onclick="switchUseCase('students')" id="tab-students" class="usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 hover:text-white">
+                    <i class="fa-solid fa-graduation-cap mr-2"></i>Students & Researchers
+                </button>
+                <button onclick="switchUseCase('professionals')" id="tab-professionals" class="usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 hover:text-white">
+                    <i class="fa-solid fa-briefcase mr-2"></i>Executives & Meetings
+                </button>
+            </div>
+
+            <!-- Tab Content Display Card -->
+            <div id="useCaseContent" class="glass-panel p-8 sm:p-12 rounded-3xl border border-slate-800 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div class="lg:col-span-7 space-y-4">
+                    <span id="useCaseBadge" class="inline-block px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-mono font-bold">FOR INVESTIGATIVE WORK & FIELD REPORTERS</span>
+                    <h3 id="useCaseTitle" class="text-2xl sm:text-3xl font-extrabold text-white">Capture off-the-cuff quotes without holding a mic in someone's face.</h3>
+                    <p id="useCaseDesc" class="text-slate-300 leading-relaxed text-sm sm:text-base">
+                        The best quotes happen right after you stop officially interviewing. Keep your device on ambient standby during press scrums or field walks. When an unscripted gem is dropped, trigger a 5-minute capture hands-free.
+                    </p>
+                    <div class="pt-4 border-t border-slate-800/80">
+                        <blockquote id="useCaseQuote" class="text-sm italic text-slate-400 border-l-2 border-brand-400 pl-4">
+                            "I snagged a front-page quote during a casual hallway walk at a tech summit because my phone was buffering. Absolute game changer for sourcing."
+                        </blockquote>
+                        <span id="useCaseAuthor" class="block text-xs font-mono text-slate-300 mt-2 font-bold">— Sarah M., Tech Investigative Journalist</span>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <div class="text-xs font-mono text-slate-400 uppercase tracking-wider">Workflow Advantage</div>
+                    <ul id="useCaseBenefits" class="space-y-3 text-sm text-slate-300 font-mono">
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Discreeet ambient buffer</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Instant transcript generation</li>
+                        <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> Geotagged press locations</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- PRIVACY ARCHITECTURE & ENGINE SECTION -->
+    <section id="privacy" class="py-20 relative bg-slate-900/40 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold block mb-2"><i class="fa-solid fa-shield-halved mr-1"></i> Privacy First Promise</span>
+                <h2 class="text-3xl font-extrabold text-white sm:text-4xl">How We Protect Your Privacy</h2>
+                <p class="mt-4 text-slate-400 text-base">We believe ambient audio tools must be transparent. Here is exactly how audio flows through your hardware memory.</p>
+            </div>
+
+            <!-- Flow Step Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+                
+                <!-- Step 1 -->
+                <div class="glass-card p-6 rounded-2xl border border-slate-800 relative">
+                    <div class="text-xs font-mono text-brand-400 font-bold mb-2">STEP 01</div>
+                    <h3 class="text-lg font-bold text-white mb-2">Ambient Listening</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">Microphone streams audio into temporary device RAM in short encrypted chunks.</p>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check"></i> RAM Memory Only
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-card p-6 rounded-2xl border border-slate-800 relative">
+                    <div class="text-xs font-mono text-brand-400 font-bold mb-2">STEP 02</div>
+                    <h3 class="text-lg font-bold text-white mb-2">Rolling Overwrite</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">Audio older than your chosen buffer (e.g. 5 min) is permanently wiped from memory.</p>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash-arrow-up"></i> Auto-Deleted
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-card p-6 rounded-2xl border border-slate-800 relative">
+                    <div class="text-xs font-mono text-brand-400 font-bold mb-2">STEP 03</div>
+                    <h3 class="text-lg font-bold text-white mb-2">Trigger Event</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">A decibel spike occurs or wake phrase is detected. The buffer freezes for export.</p>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-yellow-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bolt"></i> Trigger Fired
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="glass-card p-6 rounded-2xl border border-slate-800 relative">
+                    <div class="text-xs font-mono text-brand-400 font-bold mb-2">STEP 04</div>
+                    <h3 class="text-lg font-bold text-white mb-2">Local File Save</h3>
+                    <p class="text-slate-400 text-xs leading-relaxed">Only the requested buffer window is written to device storage with AI transcript.</p>
+                    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-brand-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-audio"></i> Secure Local Clip
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Comparison Table -->
+            <div class="mt-16 glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 overflow-x-auto">
+                <h3 class="text-lg font-bold text-white mb-6 font-mono text-center">Back That App Up! vs Traditional Recorders vs Spyware Apps</h3>
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-xs font-mono text-slate-400">
+                            <th class="py-3 px-4">Feature</th>
+                            <th class="py-3 px-4 text-brand-400 font-bold">Back That App Up!</th>
+                            <th class="py-3 px-4">Traditional Voice Memos</th>
+                            <th class="py-3 px-4">Always-On Spyware</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-xs font-mono divide-y divide-slate-800/60 text-slate-300">
+                        <tr>
+                            <td class="py-3.5 px-4 font-semibold text-white">Retroactive Recording</td>
+                            <td class="py-3.5 px-4 text-emerald-400 font-bold"><i class="fa-solid fa-check mr-1"></i> YES (Rolling Buffer)</td>
+                            <td class="py-3.5 px-4 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> NO (Must Press First)</td>
+                            <td class="py-3.5 px-4 text-yellow-400">Continuous File Bloat</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-4 font-semibold text-white">Disk Storage Usage</td>
+                            <td class="py-3.5 px-4 text-emerald-400 font-bold"><i class="fa-solid fa-check mr-1"></i> Zero until trigger</td>
+                            <td class="py-3.5 px-4 text-slate-400">Manual Start/Stop</td>
+                            <td class="py-3.5 px-4 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Massive Gigabyte Bloat</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-4 font-semibold text-white">Data Ownership</td>
+                            <td class="py-3.5 px-4 text-emerald-400 font-bold"><i class="fa-solid fa-check mr-1"></i> On-Device Local First</td>
+                            <td class="py-3.5 px-4 text-slate-400">Local</td>
+                            <td class="py-3.5 px-4 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> Uploaded to Cloud Servers</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3.5 px-4 font-semibold text-white">Hands-Free Triggering</td>
+                            <td class="py-3.5 px-4 text-emerald-400 font-bold"><i class="fa-solid fa-check mr-1"></i> Custom Wake & Decibels</td>
+                            <td class="py-3.5 px-4 text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> None</td>
+                            <td class="py-3.5 px-4 text-slate-400">Passive Only</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- PRICING & CONVERSION FUNNEL SECTION -->
+    <section id="pricing" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-xs font-mono uppercase tracking-widest text-brand-400 font-bold block mb-2">Omega UI LLC Exclusive Co-Founder Pass</span>
+                <h2 class="text-3xl font-extrabold text-white sm:text-5xl">SynCloud Connect Total All Access</h2>
+                <p class="mt-4 text-slate-400 text-base">Lock in all SynCloud Connect platform apps, full repository source code access, and bonus lead generation tools.</p>
+                
+                <!-- Billing Toggle -->
+                <div class="mt-8 inline-flex items-center gap-3 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                    <button id="toggleMonthlyBtn" onclick="toggleBilling('monthly')" class="px-5 py-2 rounded-xl text-xs font-mono font-bold transition-all text-slate-400">Paid Yearly ($500/yr)</button>
+                    <button id="toggleLifetimeBtn" onclick="toggleBilling('lifetime')" class="px-5 py-2 rounded-xl text-xs font-mono font-bold transition-all bg-brand-600 text-white shadow-md">Co-Founder Deal ($49.00 One-Time)</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+                
+                <!-- Standard Tier -->
+                <div class="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-2">Basic Safety Net</h3>
+                        <p class="text-slate-400 text-xs mb-6">For casual users who want essential retroactive protection.</p>
+                        <div class="mb-6">
+                            <span class="text-4xl font-extrabold text-white price-display font-mono">$0</span>
+                            <span class="text-slate-400 text-xs font-mono"> / Forever Free</span>
+                        </div>
+                        <ul class="space-y-3 text-xs font-mono text-slate-300 mb-8 border-t border-slate-800 pt-6">
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Up to 3-Min Rolling Buffer</li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Manual Retroactive Save</li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> On-Device Local Storage</li>
+                            <li class="flex items-center gap-2 text-slate-500"><i class="fa-solid fa-xmark text-slate-600"></i> Decibel Spike Detection</li>
+                            <li class="flex items-center gap-2 text-slate-500"><i class="fa-solid fa-xmark text-slate-600"></i> Voice Wake Phrase</li>
+                        </ul>
+                    </div>
+                    <button onclick="openPreorderModal('Free Tier')" class="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono font-bold transition-all">
+                        Download Starter
+                    </button>
+                </div>
+
+                <!-- Pro / Omega UI LLC SynCloud Connect Co-Founder Tier (Featured) -->
+                <div class="glass-panel p-8 rounded-3xl border-2 border-brand-500 relative shadow-2xl shadow-brand-500/20 flex flex-col justify-between scale-105 z-10 bg-slate-900/90">
+                    <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-brand-500 via-cyan-400 to-emerald-400 text-slate-950 font-mono text-[10px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                        Omega UI LLC • Co-Founder Total All Access
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-black text-white">SynCloud Connect Package</h3>
+                            <span class="text-[10px] bg-brand-500/20 text-brand-300 font-mono px-2 py-0.5 rounded border border-brand-500/30 font-bold">ALL ACCESS</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-4">Complete platform ownership access, developer repos, and lead databases.</p>
+                        <div class="mb-6 p-3 bg-slate-950/80 rounded-xl border border-slate-800">
+                            <div class="flex items-baseline gap-2">
+                                <span id="proPrice" class="text-5xl font-black text-white font-mono text-gradient-gold">$49.00</span>
+                                <span id="proTerm" class="text-slate-400 text-xs font-mono">/ Co-Founder Special</span>
+                            </div>
+                            <div class="text-[11px] font-mono text-emerald-400 mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-tag"></i> Regular Price: <span class="line-through text-slate-500">$500/year</span> (Save 90% Today)
+                            </div>
+                        </div>
+
+                        <ul class="space-y-3 text-xs font-mono text-slate-200 mb-8 border-t border-slate-800 pt-5">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-cyan-400 mt-0.5"></i>
+                                <span><strong>SynCloud Connect Total All Access:</strong> Unlimited access to all platform features & apps</span>
+                            </li>
+                            <li class="flex items-start gap-2 bg-brand-500/10 p-2 rounded-lg border border-brand-500/20">
+                                <i class="fa-solid fa-gift text-yellow-400 mt-0.5"></i>
+                                <span class="text-yellow-200"><strong>BONUS INCLUDED:</strong> Leendatabase & Legendary Leads Access</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-code-branch text-emerald-400 mt-0.5"></i>
+                                <span><strong>Full Repository Access:</strong> Recode, edit, build onto, or personalize all apps</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-brand-400 mt-0.5"></i>
+                                <span>Up to 15-Min Buffer, AI Whisper Transcripts & Decibel Spike Engine</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-brand-400 mt-0.5"></i>
+                                <span>Google Drive Cloud Auto-Sync & Custom Wake Phrase Arming</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button onclick="openPreorderModal('Omega UI LLC SynCloud Connect Total All Access Co-Founder Package')" class="w-full py-4 rounded-xl bg-gradient-to-r from-brand-600 via-cyan-500 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 text-white text-xs font-mono font-bold shadow-xl shadow-brand-600/30 transition-all flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-bolt text-yellow-300 group-hover:scale-125 transition-transform"></i>
+                        <span>Get Co-Founder All Access ($49.00)</span>
+                    </button>
+                </div>
+
+                <!-- Team/Enterprise Tier -->
+                <div class="glass-card p-8 rounded-3xl border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-2">Newsroom & Team</h3>
+                        <p class="text-slate-400 text-xs mb-6">For podcast studios, journalism desks, and corporate legal teams.</p>
+                        <div class="mb-6">
+                            <span id="teamPrice" class="text-4xl font-extrabold text-white font-mono">$500</span>
+                            <span id="teamTerm" class="text-slate-400 text-xs font-mono"> / Year (Paid Yearly)</span>
+                        </div>
+                        <ul class="space-y-3 text-xs font-mono text-slate-300 mb-8 border-t border-slate-800 pt-6">
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Everything in Co-Founder Pass</li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Centralized Team Sync Drive</li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Shared Transcript Glossary</li>
+                            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Priority Feature Access</li>
+                        </ul>
+                    </div>
+                    <button onclick="openPreorderModal('Newsroom & Team Pass ($500/yr)')" class="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono font-bold transition-all">
+                        Get Team Yearly ($500/yr)
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section class="py-20 relative bg-slate-900/30 border-t border-slate-800">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-white">Frequently Asked Questions</h2>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ Item 1 -->
+                <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+                    <button onclick="toggleFaq('faq1')" class="w-full p-5 text-left font-bold text-slate-200 hover:text-white flex items-center justify-between font-mono text-sm">
+                        <span>Does this drain my smartphone or laptop battery?</span>
+                        <i id="faq1-icon" class="fa-solid fa-chevron-down text-brand-400 transition-transform"></i>
+                    </button>
+                    <div id="faq1" class="hidden px-5 pb-5 text-slate-400 text-xs leading-relaxed font-mono border-t border-slate-800/60 pt-3">
+                        No. Back That App Up! utilizes low-power circular hardware buffers and native hardware audio DSPs. It runs with under 1.5% CPU overhead and uses virtually zero battery impact in ambient state.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+                    <button onclick="toggleFaq('faq2')" class="w-full p-5 text-left font-bold text-slate-200 hover:text-white flex items-center justify-between font-mono text-sm">
+                        <span>Are my audio files sent to remote cloud servers?</span>
+                        <i id="faq2-icon" class="fa-solid fa-chevron-down text-brand-400 transition-transform"></i>
+                    </button>
+                    <div id="faq2" class="hidden px-5 pb-5 text-slate-400 text-xs leading-relaxed font-mono border-t border-slate-800/60 pt-3">
+                        Never without your explicit command. All audio buffering and AI transcription takes place 100% locally on your machine or phone. Google Drive sync is completely optional and user-controlled.
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+                    <button onclick="toggleFaq('faq3')" class="w-full p-5 text-left font-bold text-slate-200 hover:text-white flex items-center justify-between font-mono text-sm">
+                        <span>What platforms is Back That App Up! available for?</span>
+                        <i id="faq3-icon" class="fa-solid fa-chevron-down text-brand-400 transition-transform"></i>
+                    </button>
+                    <div id="faq3" class="hidden px-5 pb-5 text-slate-400 text-xs leading-relaxed font-mono border-t border-slate-800/60 pt-3">
+                        Back That App Up! is built for iOS, macOS, Android, and Windows. A single Pro Founder License grants you access across all your devices.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-12 text-slate-500 font-mono text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-rotate-left text-brand-400 text-lg"></i>
+                <span class="text-slate-300 font-bold text-sm">Back That App Up!</span>
+                <span>© 2026 Ambient Audio Tools Inc.</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="#privacy" class="hover:text-slate-300 transition-colors">Privacy Policy</a>
+                <a href="#simulator" class="hover:text-slate-300 transition-colors">Audio Sandbox</a>
+                <a href="#pricing" class="hover:text-slate-300 transition-colors">Founder Licenses</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- PREORDER / LEAD CAPTURE MODAL -->
+    <div id="preorderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel max-w-md w-full p-8 rounded-3xl border border-slate-700 shadow-2xl relative transform scale-95 transition-transform duration-300" id="modalCard">
+            
+            <button onclick="closePreorderModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-brand-500/20 text-brand-400 flex items-center justify-center mx-auto mb-3 text-xl border border-brand-500/30">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="text-2xl font-extrabold text-white" id="modalPlanTitle">Claim Founder Access</h3>
+                <p class="text-slate-400 text-xs mt-1">Enter your email to receive your instant license key & direct download build.</p>
+            </div>
+
+            <form id="leadForm" onsubmit="handleLeadSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 mb-1.5 uppercase font-bold">Email Address</label>
+                    <input type="email" required placeholder="you@domain.com" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-brand-500 font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-mono text-slate-300 mb-1.5 uppercase font-bold">Preferred Platform</label>
+                    <select class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-brand-500 font-mono">
+                        <option>macOS & iOS Bundle</option>
+                        <option>Windows & Android Bundle</option>
+                        <option>All Platforms Access</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-600 to-cyan-500 text-white text-xs font-mono font-bold shadow-lg shadow-brand-600/30 hover:scale-[1.02] transition-all">
+                    Complete Lifetime Reservation
+                </button>
+            </form>
+
+            <div class="mt-4 text-center">
+                <span class="text-[10px] font-mono text-slate-500"><i class="fa-solid fa-lock mr-1"></i> 100% Money Back Guarantee • No Spam</span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT SIMULATOR & INTERACTION LOGIC -->
+    <script>
+        let bufferLength = 5; // minutes
+        let spikeThreshold = 78; // dB
+        let capturedClips = [];
+        let billingMode = 'lifetime';
+
+        // Canvas Setup
+        const canvas = document.getElementById('waveformCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationFrameId;
+        let waveOffset = 0;
+        let currentPulsePeak = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Draw live simulated audio waveform on canvas
+        function drawWaveform() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerY = height / 2;
+
+            // Gradient line
+            const gradient = ctx.createLinearGradient(0, 0, width, 0);
+            gradient.addColorStop(0, '#4338ca');
+            gradient.addColorStop(0.7, '#6366f1');
+            gradient.addColorStop(1, '#06b6d4');
+
+            ctx.beginPath();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = gradient;
+
+            const sliceWidth = width / 120;
+            let x = 0;
+
+            for (let i = 0; i < 120; i++) {
+                // Generate ambient sine rhythm + peak pulses
+                const noise = (Math.sin(i * 0.15 + waveOffset) * 20) + (Math.cos(i * 0.3 + waveOffset) * 15);
+                
+                // Add spike effect if triggered
+                let amplitude = noise;
+                if (i > 80 && i < 100 && currentPulsePeak > 0) {
+                    amplitude += (Math.random() * currentPulsePeak) - (currentPulsePeak / 2);
+                } else {
+                    amplitude += (Math.random() * 8) - 4;
+                }
+
+                const y = centerY + amplitude;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+
+                x += sliceWidth;
+            }
+
+            ctx.stroke();
+
+            // Decay peak flare
+            if (currentPulsePeak > 0) {
+                currentPulsePeak *= 0.92;
+            }
+
+            waveOffset += 0.08;
+            animationFrameId = requestAnimationFrame(drawWaveform);
+        }
+
+        // Live Clock Counter
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            document.getElementById('timeCounter').innerText = `LIVE NOW (${timeStr})`;
+        }, 1000);
+
+        // Slider Updates
+        function updateBufferSlider(val) {
+            bufferLength = val;
+            document.getElementById('bufferLengthVal').innerText = `${val} Minutes`;
+        }
+
+        function updateSpikeSlider(val) {
+            spikeThreshold = val;
+            document.getElementById('spikeVal').innerText = `${val} dB`;
+        }
+
+        // Trigger Event Simulators
+        function triggerSimulatedSpike() {
+            currentPulsePeak = 95; // spike amplitude
+            flashTriggerUI(`DECIBEL SPIKE DETECTED (89dB > ${spikeThreshold}dB)`);
+            addSavedClip('Decibel Spike (Auto)', '89 dB');
+        }
+
+        function triggerWakePhrase() {
+            currentPulsePeak = 70;
+            flashTriggerUI('WAKE PHRASE DETECTED: "Back That Up!"');
+            addSavedClip('Voice Wake Phrase', 'Speech Command');
+        }
+
+        function triggerManualSave() {
+            currentPulsePeak = 50;
+            flashTriggerUI('MANUAL RETROACTIVE SAVE');
+            addSavedClip('Manual Button Tap', 'User Command');
+        }
+
+        function flashTriggerUI(msg) {
+            const flash = document.getElementById('triggerFlash');
+            const flashText = document.getElementById('triggerFlashText');
+            flashText.innerText = msg;
+            flash.style.opacity = '1';
+
+            // Pulse status text
+            const statusText = document.getElementById('bufferStatusText');
+            statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400 animate-ping"></span> SAVING ${bufferLength} MIN BUFFER...`;
+            statusText.className = "text-xs font-bold font-mono text-yellow-400 flex items-center gap-1.5";
+
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                statusText.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE (RAM ONLY)`;
+                statusText.className = "text-xs font-bold font-mono text-emerald-400 flex items-center gap-1.5";
+            }, 1800);
+        }
+
+        // Add Clip to Sidebar List with simulated metadata
+        function addSavedClip(triggerType, detail) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            const mockQuotes = [
+                "...and then he turned to the team and said, 'This is going to change how we ship products forever.'",
+                "...the melody idea came to me right as the chorus dropped, check out this chord progression...",
+                "...Professor Davis specifically emphasized that chapter 4 will be 40% of the midterm exam...",
+                "...unbelievable quote right there! Make sure we keep that in the final podcast edit..."
+            ];
+            const randomQuote = mockQuotes[Math.floor(Math.random() * mockQuotes.length)];
+
+            const clip = {
+                id: Date.now(),
+                time: timeStr,
+                type: triggerType,
+                detail: detail,
+                duration: `${bufferLength}:00 min`,
+                quote: randomQuote
+            };
+
+            capturedClips.unshift(clip);
+            renderClips();
+
+            // Update transcript box
+            document.getElementById('transcriptBox').innerHTML = `
+                <div class="text-emerald-400 text-[10px] uppercase font-bold mb-1">Transcript Generated (${timeStr}):</div>
+                <div class="text-slate-200">"${randomQuote}"</div>
+            `;
+        }
+
+        function renderClips() {
+            const feed = document.getElementById('clipsFeed');
+            const badge = document.getElementById('clipCountBadge');
+            badge.innerText = `${capturedClips.length} Clips`;
+
+            if (capturedClips.length === 0) return;
+
+            feed.innerHTML = capturedClips.map(clip => `
+                <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 hover:border-brand-500/50 transition-all font-mono">
+                    <div class="flex items-center justify-between text-[11px] mb-1">
+                        <span class="text-brand-300 font-bold">${clip.type}</span>
+                        <span class="text-slate-500 text-[10px]">${clip.time}</span>
+                    </div>
+                    <div class="text-xs text-slate-300 truncate mb-2">"${clip.quote}"</div>
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-800/60 pt-1.5">
+                        <span><i class="fa-solid fa-clock mr-1"></i>${clip.duration}</span>
+                        <span class="text-emerald-400"><i class="fa-solid fa-shield mr-1"></i>Saved On-Device</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const useCaseData = {
+            journalists: {
+                badge: "FOR INVESTIGATIVE WORK & FIELD REPORTERS",
+                title: "Capture off-the-cuff quotes without holding a mic in someone's face.",
+                desc: "The best quotes happen right after you stop officially interviewing. Keep your device on ambient standby during press scrums or field walks. When an unscripted gem is dropped, trigger a 5-minute capture hands-free.",
+                quote: `"I snagged a front-page quote during a casual hallway walk at a tech summit because my phone was buffering. Absolute game changer for sourcing."`,
+                author: "— Sarah M., Tech Investigative Journalist",
+                benefits: [
+                    "Discreet ambient buffer",
+                    "Instant transcript generation",
+                    "Geotagged press locations"
+                ]
+            },
+            podcasters: {
+                badge: "FOR SHOW HOSTS & CREATORS",
+                title: "Never lose unscripted studio banter or hilarious tangents.",
+                desc: "The funniest moments in podcasting happen when the red recording light is off. Back That App Up! ensures your preshow riffing and post-show gold is always preserved.",
+                quote: `"Our funniest 2-minute intro segment of the year happened before we hit record on our main desk setup. Back That App Up saved the file."`,
+                author: "— Marcus & Dave, Hosts of The Unfiltered Pod",
+                benefits: [
+                    "Zero disk bloat during multi-hour prep",
+                    "High dB threshold catches burst laughter",
+                    "Export directly to WAV or MP3"
+                ]
+            },
+            musicians: {
+                badge: "FOR SONGWRITERS & JAM SESSIONS",
+                title: "Catch spontaneous riffs before you forget how you played them.",
+                desc: "Spontaneous musical genius is notoriously elusive. Jam in your room or studio—when you stumble into an unbelievable riff, say 'Back That Up!' to capture the last 10 minutes of guitar audio.",
+                quote: `"I played a complex fingerpicking riff by accident. Before I could forget the chord voicing, I spoke my wake phrase and had the audio loop safe."`,
+                author: "— Elena R., Indie Acoustic Guitarist",
+                benefits: [
+                    "Hands-free wake phrase activation",
+                    "High-fidelity audio preservation",
+                    "Configurable buffer up to 15 minutes"
+                ]
+            },
+            students: {
+                badge: "FOR LECTURES & ACADEMIC RESEARCH",
+                title: "Save complex professor explanations without recording full 3-hour lectures.",
+                desc: "Don't choke your hard drive with 3-hour long video lectures. Keep the rolling buffer active during class, and save only the key moments when the professor explains test topics.",
+                quote: `"When the professor says 'this will be on the final,' I tap retro-save. My study notes are now short, 3-minute perfectly transcribed audio snippets."`,
+                author: "— Liam K., Pre-Med University Student",
+                benefits: [
+                    "Instant Whisper AI keyword search",
+                    "Organized study library tags",
+                    "Extremely light on laptop battery"
+                ]
+            },
+            professionals: {
+                badge: "FOR EXECUTIVE MEETINGS & ACTION ITEMS",
+                title: "Capture action items and commitments verbatim after intense discussions.",
+                desc: "Focus on participating in meetings rather than frantically taking notes. When important decisions or complex instructions are finalized, retroactively save the context.",
+                quote: `"Client deliverables are no longer ambiguous. I capture the exact verbal agreements made in our strategy scrums with total privacy."`,
+                author: "— Julian Vance, Managing Director",
+                benefits: [
+                    "100% GDPR & Privacy compliant (RAM-only)",
+                    "Optional local Google Drive backup",
+                    "Automated timestamp metadata"
+                ]
+            }
+        };
+
+        function switchUseCase(key) {
+            const data = useCaseData[key];
+            if (!data) return;
+
+            // Highlight Tab Buttons
+            document.querySelectorAll('.usecase-tab').forEach(tab => {
+                tab.className = "usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-slate-900 text-slate-400 border border-slate-800 hover:text-white";
+            });
+            document.getElementById(`tab-${key}`).className = "usecase-tab px-5 py-2.5 rounded-xl text-xs font-mono font-bold transition-all bg-brand-600 text-white border border-brand-500 shadow-lg";
+
+            // Update content with smooth fade
+            const contentBox = document.getElementById('useCaseContent');
+            contentBox.style.opacity = '0.5';
+
+            setTimeout(() => {
+                document.getElementById('useCaseBadge').innerText = data.badge;
+                document.getElementById('useCaseTitle').innerText = data.title;
+                document.getElementById('useCaseDesc').innerText = data.desc;
+                document.getElementById('useCaseQuote').innerText = data.quote;
+                document.getElementById('useCaseAuthor').innerText = data.author;
+
+                document.getElementById('useCaseBenefits').innerHTML = data.benefits.map(b => `
+                    <li class="flex items-center gap-3"><i class="fa-solid fa-check text-emerald-400"></i> ${b}</li>
+                `).join('');
+
+                contentBox.style.opacity = '1';
+            }, 150);
+        }
+
+        function toggleBilling(mode) {
+            billingMode = mode;
+            const mBtn = document.getElementById('toggleMonthlyBtn');
+            const lBtn = document.getElementById('toggleLifetimeBtn');
+
+            if (mode === 'monthly') {
+                mBtn.className = "px-5 py-2 rounded-xl text-xs font-mono font-bold transition-all bg-brand-600 text-white shadow-md";
+                lBtn.className = "px-5 py-2 rounded-xl text-xs font-mono font-bold transition-all text-slate-400";
+                
+                document.getElementById('proPrice').innerText = "$500.00";
+                document.getElementById('proTerm').innerText = " / year (Paid Yearly)";
+                document.getElementById('teamPrice').innerText = "$500.00";
+                document.getElementById('teamTerm').innerText = " / year";
+            } else {
+                lBtn.className = "px-5 py-2 rounded-xl text-xs font-mono font-bold transition-all bg-brand-600 text-white shadow-md";
+                mBtn.className = "px-5 py-2 rounded-xl text-xs font-mono font-bold transition-all text-slate-400";
+
+                document.getElementById('proPrice').innerText = "$49.00";
+                document.getElementById('proTerm').innerText = " / Co-Founder Special";
+                document.getElementById('teamPrice').innerText = "$500.00";
+                document.getElementById('teamTerm').innerText = " / Year (Paid Yearly)";
+            }
+        }
+
+        function toggleFaq(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById(`${id}-icon`);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                el.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Modal Handlers
+        function openPreorderModal(planName = 'Pro Founder Pass') {
+            document.getElementById('modalPlanTitle').innerText = planName;
+            const modal = document.getElementById('preorderModal');
+            const card = document.getElementById('modalCard');
+            modal.classList.remove('pointer-events-none');
+            modal.classList.remove('opacity-0');
+            modal.classList.add('opacity-100');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closePreorderModal() {
+            const modal = document.getElementById('preorderModal');
+            const card = document.getElementById('modalCard');
+            modal.classList.add('opacity-0');
+            modal.classList.remove('opacity-100');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('pointer-events-none');
+            }, 300);
+        }
+
+        function handleLeadSubmit(e) {
+            e.preventDefault();
+            alert('🎉 Thank you for reserving your Founder License! Check your inbox for instant early-access credentials.');
+            closePreorderModal();
+        }
+
+        // Start animation loop on window load
+        window.onload = function() {
+            drawWaveform();
+        };
+    </script>
+</body>
+</html>
