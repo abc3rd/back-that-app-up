@@ -98,6 +98,7 @@ export default function usePreRoll() {
       const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/wav' }, body: blob });
       if (!putRes.ok) throw new Error('Upload failed');
       toast({ description: 'Recording backed up to Google Drive' });
+      base44.functions.invoke('sendUploadNotification', { name, folder: driveFolder }).catch(() => {});
     } catch (e) {
       toast({ variant: 'destructive', description: 'Google Drive backup failed' });
     }

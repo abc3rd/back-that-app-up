@@ -5,6 +5,7 @@ import MomentItem from '@/components/btau/MomentItem';
 import PullToRefresh from '@/components/PullToRefresh';
 import ScreenHeader from '@/components/btau/ScreenHeader';
 import TagFilter from '@/components/btau/TagFilter';
+import TranscriptSearchBar from '@/components/btau/TranscriptSearchBar';
 import { useTabScroll } from '@/hooks/useTabScroll';
 
 export default function Moments() {
@@ -19,6 +20,26 @@ export default function Moments() {
     [moments]
   );
   const visible = activeTag ? moments.filter((m) => Array.isArray(m.tags) && m.tags.includes(activeTag)) : moments;
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState(null);
+
+  const runSearch = useCallback(async (q) => {
+    if (!q) { setSearchQuery(''); setSearchResults(null); return; }
+    setSearchQuery(q);
+    setSearching(true);
+    try {
+      const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const query = { $or: [ { transcript: { $regex: esc, $options: 'i' } }, { description: { $regex: esc, $options: 'i' } } ] };
+      const res = await base44.entities.Moment.filter(query, { sort: '-created_date', limit: 50 });
+      setSearchResults(res.items || []);
+    } catch (e) {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -61,17 +82,38 @@ export default function Moments() {
             </p>
           ) : (
             <>
-              <TagFilter tags={allTags} active={activeTag} onSelect={setActiveTag} />
-              {visible.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">
-                  No moments tagged #{activeTag}.
-                </p>
+              <TranscriptSearchBar onSearch={runSearch} busy={searching} />
+              {searchQuery ? (
+                searching ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (searchResults || []).length === 0 ? (
+                  <p className="py-12 text-center text-sm text-muted-foreground">
+                    No transcripts match &ldquo;{searchQuery}&rdquo;.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {(searchResults || []).map((m) => (
+                      <MomentItem key={m.id} moment={m} />
+                    ))}
+                  </div>
+                )
               ) : (
-                <div className="flex flex-col gap-3">
-                  {visible.map((m) => (
-                    <MomentItem key={m.id} moment={m} />
-                  ))}
-                </div>
+                <>
+                  <TagFilter tags={allTags} active={activeTag} onSelect={setActiveTag} />
+                  {visible.length === 0 ? (
+                    <p className="py-12 text-center text-sm text-muted-foreground">
+                      No moments tagged #{activeTag}.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {visible.map((m) => (
+                        <MomentItem key={m.id} moment={m} />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
