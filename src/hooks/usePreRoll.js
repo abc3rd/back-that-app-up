@@ -38,7 +38,7 @@ export default function usePreRoll() {
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
     effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown, effRecordingRetentionDays,
     threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
-    locationTagging, effAiTranscription, autoListen,
+    locationTagging, effAiTranscription, effAutoListen,
   } = settings;
 
   const engineRef = useRef(null);
@@ -258,7 +258,7 @@ export default function usePreRoll() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceArm]);
   useEffect(() => {
-    if (autoListen) armRef.current?.();
+    if (effAutoListen) armRef.current?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

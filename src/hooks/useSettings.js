@@ -82,6 +82,7 @@ export function SettingsProvider({ children }) {
   const effTempRetentionMinutes = can(FEATURES.TEMP_RETENTION_DURATION) ? s.tempRetentionMinutes : 0;
   const effRecordingRetentionDays = s.recordingRetentionDays;
   const effAiTranscription = can(FEATURES.AI_TRANSCRIPTION) ? s.aiTranscription : false;
+  const effAutoListen = isPro || s.autoListen;
 
   // Setters — gating is centralized here so components don't scatter paywall checks.
   const setRewind = (v) => {
@@ -144,7 +145,7 @@ export function SettingsProvider({ children }) {
   const value = {
     ...s,
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
-    effSustainedDuration, effSpikeCooldown, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription,
+    effSustainedDuration, effSpikeCooldown, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription, effAutoListen,
     plan, isPro, can, setPlan, openPaywall, closePaywall, requirePro, paywallFeature,
     setRewind, setPostRoll, setExtendOnSecondTrigger, setTriggerCooldown, setPreventOverlaps,
     setVoiceArm, setPhrase, setCustomPhrases, setAutoCapture, setThreshold, setSustainedDuration,
