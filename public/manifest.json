@@ -1,0 +1,16 @@
+{
+  "name": "Back That App Up!",
+  "short_name": "Back That App Up",
+  "description": "Ambient pre-roll audio capture. Keeps a rolling buffer on your device and saves the last few seconds when you need them.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a12",
+  "theme_color": "#0a0a12",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
