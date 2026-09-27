@@ -9,6 +9,7 @@ export default function Header({ listening, capturing }) {
   return (
     <header className="flex items-start justify-between gap-4">
       <div>
+        <p className="mb-1 text-xs font-medium tracking-tight text-foreground/80">Back That App Up!</p>
         <p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Ambient pre-roll</p>
         <h1 className="mt-2 font-display text-4xl leading-none tracking-tight">
           Back That <em className="text-primary">App</em> Up!
@@ -18,7 +19,7 @@ export default function Header({ listening, capturing }) {
         <button
           aria-label="Settings"
           onClick={() => navigate('/settings')}
-          className="flex h-9 w-9 select-none items-center justify-center rounded-full border text-muted-foreground transition-colors hover:text-foreground"
+          className="flex h-11 w-11 select-none items-center justify-center rounded-full border text-muted-foreground transition-colors hover:text-foreground"
         >
           <SettingsIcon className="h-4 w-4" strokeWidth={1.5} />
         </button>

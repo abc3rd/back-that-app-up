@@ -18,7 +18,7 @@ export default function RewindPicker({ value, onChange }) {
           <button
             key={o.value}
             onClick={() => onChange(o.value)}
-            className={`rounded-full py-2 text-xs transition-all duration-300 ${value === o.value ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`rounded-full py-3 text-xs transition-all duration-300 ${value === o.value ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
           >
             {o.label}
           </button>

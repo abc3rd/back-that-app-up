@@ -23,7 +23,7 @@ export default function RecordingItem({ rec, fresh, onDelete }) {
       </button>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">{format(rec.timestamp, 'MMM d · HH:mm:ss')}</p>
-        <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+        <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
           {(rec.durationMs / 1000).toFixed(1)}s · {Math.round(rec.sizeBytes / 1024)} KB · {rec.peakDb.toFixed(0)} dB · {rec.reason === 'button' ? 'manual' : 'spike'}
         </p>
       </div>
