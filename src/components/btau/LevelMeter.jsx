@@ -24,7 +24,7 @@ export default function LevelMeter({ db, threshold, active }) {
       <div className="relative">
         <div className="h-3 overflow-hidden rounded-full bg-secondary">
           <motion.div
-            className={`h-full rounded-full ${over ? 'bg-primary' : 'bg-foreground/80'}`}
+            className={`h-full rounded-full bg-gradient-to-r from-[#00F2FF] to-[#FF00FF] ${over ? 'glow-magenta' : ''}`}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.08, ease: 'linear' }}
           />

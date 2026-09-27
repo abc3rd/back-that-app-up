@@ -5,14 +5,14 @@ import { Settings as SettingsIcon } from 'lucide-react';
 export default function Header({ listening, capturing }) {
   const navigate = useNavigate();
   const label = capturing ? 'Capturing' : listening ? 'Listening' : 'Idle';
-  const dot = capturing ? 'bg-primary animate-pulse' : listening ? 'bg-emerald-400' : 'bg-muted-foreground/50';
+  const dot = capturing ? 'bg-primary animate-pulse' : listening ? 'bg-primary' : 'bg-muted-foreground/50';
   return (
     <header className="flex items-start justify-between gap-4">
       <div>
-        <p className="mb-1 text-xs font-medium tracking-tight text-foreground/80">Back That App Up!</p>
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-gradient-neon">Back That App Up!</p>
         <p className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Ambient pre-roll</p>
-        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight">
-          Back That <em className="text-primary">App</em> Up!
+        <h1 className="mt-2 font-display text-4xl font-extrabold uppercase italic leading-none tracking-tight">
+          <span className="text-foreground">Back That</span>{' '}<span className="text-gradient-neon">App Up!</span>
         </h1>
       </div>
       <div className="mt-1 flex items-center gap-2">

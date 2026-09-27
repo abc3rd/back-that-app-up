@@ -33,7 +33,7 @@ export default function Home() {
             <LevelMeter db={p.db} threshold={p.threshold} active={p.listening} />
           </section>
           <SaveButton listening={p.listening} capturing={p.capturing} rewindLabel={rewindLabel} onSave={p.backThatAppUp} />
-          <section className="flex flex-col gap-8 rounded-3xl border bg-card p-6">
+          <section className="flex flex-col gap-8 rounded-3xl border-gradient-neon p-6 glow-neon-soft">
             <VoiceTrigger enabled={p.voiceArm} supported={p.voiceSupported} heard={p.voiceHeard} onToggle={p.toggleVoiceArm} />
             <div className="h-px bg-border" />
             <ThresholdControl value={p.threshold} onChange={p.changeThreshold} />

@@ -25,7 +25,7 @@ export default function RecordingItem({ rec, fresh, onDelete, onRename }) {
   };
 
   return (
-    <div className={`flex items-center gap-4 rounded-2xl border p-4 transition-colors duration-700 ${fresh ? 'border-primary/50 bg-primary/5' : 'bg-card'}`}>
+    <div className={`flex items-center gap-4 rounded-2xl border p-4 transition-colors duration-700 ${fresh ? 'border-primary/60 bg-primary/10 glow-cyan' : 'bg-card'}`}>
       <audio ref={audioRef} src={url} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} />
       <button aria-label={playing ? 'Pause' : 'Play'} onClick={toggle} className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-full bg-foreground text-background">
         {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
