@@ -3,7 +3,12 @@ import ScreenHeader from '@/components/btau/ScreenHeader';
 import PublicFooter from '@/components/btau/PublicFooter';
 
 const EFFECTIVE_DATE = 'September 27, 2026';
-const CONTACT_EMAIL = 'hello@backthatappup.app';
+const COMPANY = 'Omega UI, LLC';
+const COMPANY_LOCATION = 'Edison';
+const CONTACT_EMAIL = 'contact@syncloudconnect.com';
+const SUPPORT_EMAIL = 'support@syncloudconnect.com';
+const PHONE_DISPLAY = '+1 941-882-0130';
+const PHONE_TEL = '+19418820130';
 
 function Section({ title, children }) {
   return (
@@ -129,8 +134,12 @@ export default function Privacy() {
         </Section>
 
         <Section title="13. Contact us">
+          <p className="font-medium text-foreground">{COMPANY} · {COMPANY_LOCATION}</p>
           <p>
-            Questions about this policy or your data? Email {CONTACT_EMAIL} or visit our Contact page.
+            General questions: <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:opacity-80">{CONTACT_EMAIL}</a>
+          </p>
+          <p>
+            Support: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:opacity-80">{SUPPORT_EMAIL}</a> · <a href={`tel:${PHONE_TEL}`} className="text-primary hover:opacity-80">{PHONE_DISPLAY}</a>
           </p>
         </Section>
 
