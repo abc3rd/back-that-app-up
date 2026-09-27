@@ -8,6 +8,7 @@ import SaveButton from '@/components/btau/SaveButton';
 import ThresholdControl from '@/components/btau/ThresholdControl';
 import RewindPicker, { REWIND_OPTIONS } from '@/components/btau/RewindPicker';
 import RecordingsList from '@/components/btau/RecordingsList';
+import VoiceTrigger from '@/components/btau/VoiceTrigger';
 
 export default function Home() {
   const p = usePreRoll();
@@ -29,6 +30,8 @@ export default function Home() {
         </section>
         <SaveButton listening={p.listening} capturing={p.capturing} rewindLabel={rewindLabel} onSave={p.backThatAppUp} />
         <section className="flex flex-col gap-8 rounded-3xl border bg-card p-6">
+          <VoiceTrigger enabled={p.voiceArm} supported={p.voiceSupported} heard={p.voiceHeard} onToggle={p.toggleVoiceArm} />
+          <div className="h-px bg-border" />
           <ThresholdControl value={p.threshold} onChange={p.changeThreshold} />
           <RewindPicker value={p.rewind} onChange={p.changeRewind} />
         </section>

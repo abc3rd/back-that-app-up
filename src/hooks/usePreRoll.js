@@ -4,10 +4,15 @@ import PreRollEngine from '@/lib/preroll/PreRollEngine';
 import { deleteRecording, listRecordings, saveRecording } from '@/lib/preroll/storage';
 
 const stored = (key, fallback) => Number(localStorage.getItem(key)) || fallback;
+const PHRASE = 'back that app up';
 
 export default function usePreRoll() {
   const engineRef = useRef(null);
   const wakeRef = useRef(null);
+  const recRef = useRef(null);
+  const listeningRef = useRef(false);
+  const voiceArmRef = useRef(false);
+
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [db, setDb] = useState(0);
@@ -16,10 +21,16 @@ export default function usePreRoll() {
   const [recordings, setRecordings] = useState([]);
   const [lastSavedId, setLastSavedId] = useState(null);
   const [error, setError] = useState(null);
+  const [voiceHeard, setVoiceHeard] = useState(false);
+  const [voiceSupported] = useState(() => typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+  const [voiceArm, setVoiceArm] = useState(false);
+
+  useEffect(() => { listeningRef.current = listening; }, [listening]);
+  useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
 
   const refresh = useCallback(async () => setRecordings(await listRecordings()), []);
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => () => engineRef.current?.stop(), []);
+  useEffect(() => () => { engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, reason }) => {
     const ts = Date.now();
@@ -29,6 +40,38 @@ export default function usePreRoll() {
     setLastSavedId(rec.id);
     refresh();
   }, [refresh]);
+
+  const stopRec = useCallback(() => {
+    const r = recRef.current;
+    recRef.current = null;
+    try { r?.stop(); } catch {}
+  }, []);
+
+  const startRec = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    stopRec();
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+    rec.onresult = (e) => {
+      const text = Array.from(e.results).map((r) => r[0].transcript).join(' ').toLowerCase();
+      if (text.includes(PHRASE)) {
+        setVoiceHeard(true);
+        setTimeout(() => setVoiceHeard(false), 1500);
+        stopRec();
+        arm();
+      }
+    };
+    rec.onerror = () => {};
+    rec.onend = () => {
+      if (voiceArmRef.current && !listeningRef.current) {
+        try { rec.start(); } catch {}
+      }
+    };
+    try { rec.start(); recRef.current = rec; } catch {}
+  }, [stopRec]);
 
   const arm = async () => {
     setError(null);
@@ -41,6 +84,7 @@ export default function usePreRoll() {
     }
     engineRef.current = engine;
     setListening(true);
+    stopRec();
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
   };
 
@@ -51,6 +95,7 @@ export default function usePreRoll() {
     setListening(false);
     setCapturing(false);
     setDb(0);
+    if (voiceArmRef.current) startRec();
   };
 
   const changeThreshold = (v) => {
@@ -65,8 +110,15 @@ export default function usePreRoll() {
     engineRef.current?.setRewind(v);
   };
 
+  const toggleVoiceArm = () => {
+    const next = !voiceArm;
+    setVoiceArm(next);
+    voiceArmRef.current = next;
+    if (next) startRec(); else stopRec();
+  };
+
   const backThatAppUp = () => engineRef.current?.saveNow();
   const remove = async (id) => { await deleteRecording(id); refresh(); };
 
-  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, dismissError: () => setError(null) };
+  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, toggleVoiceArm, dismissError: () => setError(null) };
 }
