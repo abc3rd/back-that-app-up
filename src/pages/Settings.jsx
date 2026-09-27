@@ -12,18 +12,32 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
 import BackButton from '@/components/BackButton';
 
 export default function Settings() {
   const { toast } = useToast();
+  const { logout } = useAuth();
   const [open, setOpen] = useState(false);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     setOpen(false);
-    toast({
-      title: 'Deletion requested',
-      description: 'Contact support to complete account deletion. Local captures remain on this device.',
-    });
+    try {
+      try {
+        await base44.functions.invoke('deleteUserAccount');
+      } catch (fnErr) {
+        if (typeof base44.auth.deleteAccount === 'function') {
+          await base44.auth.deleteAccount();
+        } else {
+          throw fnErr;
+        }
+      }
+      logout(false);
+      window.location.href = '/login';
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Deletion failed', description: e?.message || 'Could not delete account. Please contact support.' });
+    }
   };
 
   return (

@@ -10,7 +10,7 @@ export default function LevelMeter({ db, threshold, active }) {
         <div className="flex items-center gap-2">
           <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Ambient level</span>
           {active && (
-            <span className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+            <span className="flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
               LIVE
             </span>
