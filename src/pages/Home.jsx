@@ -18,6 +18,9 @@ import PostRollPicker from '@/components/btau/PostRollPicker';
 import MaxAutoControl from '@/components/btau/MaxAutoControl';
 import MomentSearch from '@/components/btau/MomentSearch';
 import PublicFooter from '@/components/btau/PublicFooter';
+import QuickBackupButton from '@/components/btau/QuickBackupButton';
+import useQuickBackup from '@/hooks/useQuickBackup';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Home() {
   const scrollRef = useRef(null);
@@ -26,8 +29,11 @@ export default function Home() {
   const [highlightId, setHighlightId] = useState(null);
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem('btau.onboarded') === '1');
   const rewindLabel = REWIND_OPTIONS.find((o) => o.value === p.rewind)?.label ?? `${p.rewind} s`;
+  const { toast } = useToast();
+  useQuickBackup({ listening: p.listening, onSave: p.backThatAppUp, toast });
 
   return (
+    <>
     <PullToRefresh containerRef={scrollRef} onRefresh={p.refresh}>
       <div className="min-h-screen bg-background text-foreground">
         {!onboarded && <Onboarding onDone={() => setOnboarded(true)} />}
@@ -67,5 +73,7 @@ export default function Home() {
         </main>
       </div>
     </PullToRefresh>
+    <QuickBackupButton listening={p.listening} onSave={p.backThatAppUp} />
+    </>
   );
 }
