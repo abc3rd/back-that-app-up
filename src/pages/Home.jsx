@@ -11,6 +11,9 @@ import RecordingsList from '@/components/btau/RecordingsList';
 import VoiceTrigger from '@/components/btau/VoiceTrigger';
 import StealthToggle from '@/components/btau/StealthToggle';
 import PullToRefresh from '@/components/PullToRefresh';
+import AutoCaptureToggle from '@/components/btau/AutoCaptureToggle';
+import PostRollPicker from '@/components/btau/PostRollPicker';
+import MaxAutoControl from '@/components/btau/MaxAutoControl';
 
 export default function Home() {
   const p = usePreRoll();
@@ -39,10 +42,14 @@ export default function Home() {
             <div className="h-px bg-border" />
             <ThresholdControl value={p.threshold} onChange={p.changeThreshold} />
             <RewindPicker value={p.rewind} onChange={p.changeRewind} />
+            <PostRollPicker value={p.postRoll} onChange={p.changePostRoll} />
+            <div className="h-px bg-border" />
+            <AutoCaptureToggle enabled={p.autoCapture} onToggle={p.toggleAutoCapture} />
+            {p.autoCapture && <MaxAutoControl value={p.maxAuto} onChange={p.changeMaxAuto} />}
             <div className="h-px bg-border" />
             <StealthToggle enabled={p.silentMode} onToggle={p.toggleSilent} />
           </section>
-          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} onDelete={p.remove} onRename={p.rename} />
+          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} onDelete={p.remove} onRename={p.rename} onProtect={p.protect} onDeleteAllTemporary={p.deleteAllTemp} />
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
             Audio stays in memory only. Nothing is written until a spike or a tap, and clips never leave this device.
           </p>

@@ -15,7 +15,7 @@ async function run(mode, fn) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, mode);
     const req = fn(tx.objectStore(STORE));
-    tx.oncomplete = () => resolve(req.result);
+    tx.oncomplete = () => resolve(req && req.result !== undefined ? req.result : undefined);
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -24,3 +24,34 @@ export const saveRecording = (rec) => run('readwrite', (s) => s.put(rec));
 export const deleteRecording = (id) => run('readwrite', (s) => s.delete(id));
 export const listRecordings = async () =>
   (await run('readonly', (s) => s.getAll())).sort((a, b) => b.timestamp - a.timestamp);
+
+// Convert an unprotected automatic spike capture into a protected user capture.
+export const protectRecording = async (id) => {
+  const rec = await run('readonly', (s) => s.get(id));
+  if (!rec) return null;
+  const updated = { ...rec, protected: true, temporary: false };
+  await run('readwrite', (s) => s.put(updated));
+  return updated;
+};
+
+// Delete every unprotected temporary capture.
+export const deleteAllTemporary = async () => {
+  const all = await run('readonly', (s) => s.getAll());
+  const temps = all.filter((r) => r.temporary && !r.protected);
+  if (!temps.length) return 0;
+  await run('readwrite', (s) => { temps.forEach((t) => s.delete(t.id)); });
+  return temps.length;
+};
+
+// Keep at most `max` unprotected temporary captures; delete the oldest beyond that.
+// Protected captures (manual / voice / kept) are never touched.
+export const cleanupTemporary = async (max) => {
+  const all = await run('readonly', (s) => s.getAll());
+  const temps = all
+    .filter((r) => r.temporary && !r.protected)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const toDelete = temps.slice(0, Math.max(0, temps.length - max));
+  if (!toDelete.length) return 0;
+  await run('readwrite', (s) => { toDelete.forEach((t) => s.delete(t.id)); });
+  return toDelete.length;
+};

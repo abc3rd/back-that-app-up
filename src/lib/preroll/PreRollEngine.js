@@ -1,14 +1,26 @@
 import { encodeWav } from './wav';
 
 export const SAMPLE_RATE = 16000;
-export const POST_ROLL_SECONDS = 10;
 
 // Paper dB scale: 20*log10(rms) over signed 16-bit samples. 0 dB = silence, ~90.3 dB = full scale.
+//
+// Architecture:
+// - The microphone runs continuously while armed. `ring` is an in-memory circular
+//   buffer that overwrites itself as new audio arrives. Advancing the buffer never
+//   creates a recording.
+// - A Saved Capture is produced ONLY by an explicit trigger (button, voice phrase,
+//   or an auto spike when Auto Capture on Sound is enabled). `capture()` snapshots
+//   the current pre-roll, then accumulates `postRollSeconds` of post-roll from the
+//   SAME running mic stream — no second recorder is created.
 export default class PreRollEngine {
   constructor({ onLevel, onCapture, onCaptureStart }) {
     Object.assign(this, { onLevel, onCapture, onCaptureStart });
     this.post = null;
     this.lastDb = 0;
+    this.autoCapture = false;
+    this.postRollSeconds = 10;
+    this.cooldownMs = 2000;
+    this.lastCaptureAt = 0;
   }
 
   async start(rewindSeconds, threshold) {
@@ -45,6 +57,9 @@ export default class PreRollEngine {
     this.filled = false;
   }
 
+  setPostRoll(seconds) { this.postRollSeconds = seconds; }
+  setAutoCapture(on) { this.autoCapture = !!on; }
+
   process(input) {
     const ratio = this.ctx.sampleRate / SAMPLE_RATE;
     const out = new Int16Array(Math.ceil((input.length - this.pos) / ratio));
@@ -63,15 +78,38 @@ export default class PreRollEngine {
     this.write(samples);
 
     if (this.post) {
+      // A capture is in progress: accumulate post-roll from the running stream.
       this.post.chunks.push(samples.slice());
       this.post.count += n;
       this.post.peak = Math.max(this.post.peak, db);
-      if (this.post.count >= POST_ROLL_SECONDS * SAMPLE_RATE) this.finishPost();
-    } else if (db >= this.threshold) {
-      this.post = { pre: this.snapshot(), chunks: [], count: 0, peak: db };
-      this.onCaptureStart();
+      if (this.post.count >= this.post.seconds * SAMPLE_RATE) this.finishPost();
+    } else if (this.autoCapture && db >= this.threshold && this.offCooldown()) {
+      // Auto spike capture — only when enabled and off cooldown.
+      this.capture('spike');
     }
     this.onLevel(db);
+  }
+
+  offCooldown() {
+    return Date.now() - this.lastCaptureAt >= this.cooldownMs + this.postRollSeconds * 1000;
+  }
+
+  // Begin a Saved Capture: snapshot the pre-roll, then collect post-roll.
+  // The rolling mic buffer keeps running; no second recorder is created.
+  capture(triggerType) {
+    if (!this.ctx || this.post) return;
+    this.lastCaptureAt = Date.now();
+    const triggerTimestamp = Date.now();
+    this.post = {
+      pre: this.snapshot(),
+      triggerType,
+      triggerTimestamp,
+      chunks: [],
+      count: 0,
+      peak: this.lastDb,
+      seconds: this.postRollSeconds,
+    };
+    this.onCaptureStart?.(triggerType);
   }
 
   write(samples) {
@@ -93,23 +131,31 @@ export default class PreRollEngine {
   }
 
   finishPost() {
-    const { pre, chunks, count, peak } = this.post;
+    const { pre, chunks, count, peak, triggerType, triggerTimestamp } = this.post;
     const all = new Int16Array(pre.length + count);
     all.set(pre);
     let o = pre.length;
     chunks.forEach((c) => { all.set(c, o); o += c.length; });
     this.post = null;
-    this.emit(all, 'threshold', peak);
+    this.emit(all, triggerType, peak, triggerTimestamp, pre.length);
   }
 
-  saveNow() {
-    if (!this.ctx) return;
-    this.emit(this.snapshot(), 'button', this.lastDb);
-  }
+  // Manual button trigger → pre-roll + post-roll capture.
+  saveNow() { this.capture('button'); }
+  // Voice phrase trigger → pre-roll + post-roll capture.
+  voiceCapture() { this.capture('voice'); }
 
-  emit(samples, reason, peakDb) {
+  emit(samples, triggerType, peakDb, triggerTimestamp, preRollSamples) {
     if (!samples.length) return;
     const blob = encodeWav(samples, SAMPLE_RATE);
-    this.onCapture({ blob, durationMs: (samples.length / SAMPLE_RATE) * 1000, peakDb, reason });
+    const triggerOffsetMs = Math.round((preRollSamples / SAMPLE_RATE) * 1000);
+    this.onCapture({
+      blob,
+      durationMs: (samples.length / SAMPLE_RATE) * 1000,
+      peakDb,
+      triggerType,
+      triggerTimestamp,
+      triggerOffsetMs,
+    });
   }
 }
