@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { PLAN, planHas, FEATURES } from '@/lib/entitlements';
 
 const KEY = 'btau.settings.v1';
@@ -134,7 +134,7 @@ export function SettingsProvider({ children }) {
     setArcEnabled, setLocalOnly,
   };
 
-  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+  return React.createElement(SettingsContext.Provider, { value }, children);
 }
 
 export function useSettings() {

@@ -7,6 +7,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from 'next-themes';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { SettingsProvider } from '@/hooks/useSettings';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import MotionPage from '@/components/MotionPage';
@@ -68,6 +69,7 @@ function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AuthProvider>
+        <SettingsProvider>
         <QueryClientProvider client={queryClientInstance}>
           <Router>
             <ScrollToTop />
@@ -75,6 +77,7 @@ function App() {
           </Router>
           <Toaster />
         </QueryClientProvider>
+        </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>
   )
