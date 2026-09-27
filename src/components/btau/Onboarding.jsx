@@ -89,7 +89,7 @@ export default function Onboarding({ onDone }) {
               animate={{ opacity: 1, x: 0 }}
               exit={(d) => ({ opacity: 0, x: d > 0 ? -60 : 60 })}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="flex w-full min-h-[20rem] cursor-grab flex-col items-center gap-6 rounded-3xl border-gradient-neon p-8 text-center active:cursor-grabbing"
+              className="flex w-full min-h-[18rem] cursor-grab flex-col items-center justify-center gap-6 rounded-3xl border border-primary/30 bg-card p-8 text-center shadow-sm active:cursor-grabbing"
             >
               <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-primary/30 bg-primary/10 glow-neon-soft">
                 <Icon className="h-9 w-9 text-primary" strokeWidth={1.75} />
