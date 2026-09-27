@@ -39,7 +39,7 @@ export default function Home() {
             <ThresholdControl value={p.threshold} onChange={p.changeThreshold} />
             <RewindPicker value={p.rewind} onChange={p.changeRewind} />
           </section>
-          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} onDelete={p.remove} />
+          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} onDelete={p.remove} onRename={p.rename} />
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
             Audio stays in memory only. Nothing is written until a spike or a tap, and clips never leave this device.
           </p>

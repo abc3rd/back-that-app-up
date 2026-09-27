@@ -2,7 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import RecordingItem from './RecordingItem';
 
-export default function RecordingsList({ recordings, lastSavedId, onDelete }) {
+export default function RecordingsList({ recordings, lastSavedId, onDelete, onRename }) {
   return (
     <section>
       <div className="mb-4 flex items-baseline justify-between">
@@ -18,7 +18,7 @@ export default function RecordingsList({ recordings, lastSavedId, onDelete }) {
           <AnimatePresence initial={false}>
             {recordings.map((rec) => (
               <motion.div key={rec.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.35 }}>
-                <RecordingItem rec={rec} fresh={rec.id === lastSavedId} onDelete={onDelete} />
+                <RecordingItem rec={rec} fresh={rec.id === lastSavedId} onDelete={onDelete} onRename={onRename} />
               </motion.div>
             ))}
           </AnimatePresence>

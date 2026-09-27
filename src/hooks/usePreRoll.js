@@ -34,7 +34,7 @@ export default function usePreRoll() {
 
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, reason }) => {
     const ts = Date.now();
-    const rec = { id: String(ts), name: `btau_${format(ts, 'yyyy-MM-dd_HH-mm-ss')}.wav`, timestamp: ts, durationMs, sizeBytes: blob.size, peakDb, reason, blob };
+    const rec = { id: String(ts), name: `btau_${format(ts, 'yyyy-MM-dd_HH-mm-ss')}.wav`, label: format(ts, 'MMM d · HH:mm:ss'), timestamp: ts, durationMs, sizeBytes: blob.size, peakDb, reason, blob };
     await saveRecording(rec);
     setCapturing(false);
     setLastSavedId(rec.id);
@@ -119,6 +119,13 @@ export default function usePreRoll() {
 
   const backThatAppUp = () => engineRef.current?.saveNow();
   const remove = async (id) => { await deleteRecording(id); refresh(); };
+  const rename = async (id, label) => {
+    const rec = recordings.find((r) => r.id === id);
+    if (!rec) return;
+    const updated = { ...rec, label };
+    await saveRecording(updated);
+    setRecordings((prev) => prev.map((r) => (r.id === id ? updated : r)));
+  };
 
-  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, refresh, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, toggleVoiceArm, dismissError: () => setError(null) };
+  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, refresh, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, rename, toggleVoiceArm, dismissError: () => setError(null) };
 }
