@@ -93,6 +93,7 @@ export default function usePreRoll() {
     setLastSavedId(rec.id);
     try {
       await saveRecording(rec);
+      base44.analytics.track({ eventName: 'recording_saved' });
       if (!protectedCapture) await cleanupTemporary(maxAuto);
       if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
       refresh();
@@ -183,6 +184,7 @@ export default function usePreRoll() {
     }
     engineRef.current = engine;
     setListening(true);
+    base44.analytics.track({ eventName: 'detector_armed' });
     if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
     if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
