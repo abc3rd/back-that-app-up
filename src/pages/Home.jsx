@@ -17,6 +17,7 @@ import PostRollPicker from '@/components/btau/PostRollPicker';
 import MaxAutoControl from '@/components/btau/MaxAutoControl';
 import BottomTabBar from '@/components/btau/BottomTabBar';
 import MomentSearch from '@/components/btau/MomentSearch';
+import PublicFooter from '@/components/btau/PublicFooter';
 
 export default function Home() {
   const p = usePreRoll();
@@ -60,6 +61,7 @@ export default function Home() {
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
             Audio stays in memory only. Nothing is written until a spike or a tap, and clips never leave this device.
           </p>
+          <PublicFooter />
         </main>
       </div>
       <BottomTabBar />

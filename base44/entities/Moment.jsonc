@@ -1,0 +1,37 @@
+{
+  "name": "Moment",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "description": "A short note describing what the captured moment contains"
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": [
+        "button",
+        "voice",
+        "spike"
+      ],
+      "description": "How the moment was captured"
+    },
+    "duration_ms": {
+      "type": "number",
+      "description": "Length of the captured clip in milliseconds"
+    },
+    "location_label": {
+      "type": "string",
+      "description": "Reverse-geocoded place name where the moment was captured"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Searchable tags for the moment"
+    }
+  },
+  "required": [
+    "description"
+  ]
+}
