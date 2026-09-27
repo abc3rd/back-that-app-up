@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import MomentItem from '@/components/btau/MomentItem';
 import PullToRefresh from '@/components/PullToRefresh';
+import ScreenHeader from '@/components/btau/ScreenHeader';
 import { useTabScroll } from '@/hooks/useTabScroll';
 
 export default function Moments() {
@@ -37,8 +38,8 @@ export default function Moments() {
   return (
     <PullToRefresh containerRef={scrollRef} onRefresh={load}>
       <div className="min-h-screen bg-background text-foreground">
-        <main className="mx-auto flex max-w-md flex-col gap-6 px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
-          <h1 className="text-2xl font-bold uppercase italic tracking-tight text-gradient-neon">Moments</h1>
+        <ScreenHeader title="Moments" showBack={false} titleClassName="font-bold uppercase italic tracking-tight text-gradient-neon" />
+        <main className="mx-auto flex max-w-md flex-col gap-6 px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-6">
           <p className="text-sm text-muted-foreground">
             Every saved back-up, paired with its transcript. Tap play to listen and read along — the text appears here the moment transcription finishes.
           </p>

@@ -16,7 +16,7 @@ export default function Settings() {
   useTabScroll('/settings', scrollRef);
   return (
     <div ref={scrollRef} className="h-screen overflow-y-auto overscroll-y-none no-scrollbar bg-background text-foreground">
-      <ScreenHeader title="Settings" />
+      <ScreenHeader title="Settings" showBack={false} />
       <main className="mx-auto max-w-md px-6 pt-8 pb-[max(7rem,env(safe-area-inset-bottom))]">
         <div className="flex flex-col gap-6">
           <SubscriptionSection />
