@@ -1,12 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Pause, Play } from 'lucide-react';
+import { ChevronRight, Loader2, Pause, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import PlaybackSpeedControl from '@/components/btau/PlaybackSpeedControl';
 import TagEditor from '@/components/btau/TagEditor';
 
 export default function MomentItem({ moment }) {
   const audioRef = useRef(null);
+  const navigate = useNavigate();
   const [signedUrl, setSignedUrl] = useState(null);
   const [signing, setSigning] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -74,6 +76,13 @@ export default function MomentItem({ moment }) {
             {moment.location_label ? ` · 📍 ${moment.location_label}` : ''}
           </p>
         </div>
+        <button
+          aria-label="Open moment details"
+          onClick={() => navigate(`/moments/${moment.id}`)}
+          className="flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
       </div>
       <div className="flex items-center justify-between gap-2">
         <PlaybackSpeedControl audioRef={audioRef} />

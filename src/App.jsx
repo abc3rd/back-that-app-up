@@ -12,6 +12,8 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import MotionPage from '@/components/MotionPage';
 import TabLayout from '@/components/btau/TabLayout';
+import TabOutletLayout from '@/components/btau/TabOutletLayout';
+import ThemeColorSync from '@/components/ThemeColorSync';
 import { TabStackProvider, TAB_PATHS } from '@/hooks/useTabStack';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -27,6 +29,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const Moments = lazy(() => import('./pages/Moments'));
+const MomentDetail = lazy(() => import('./pages/MomentDetail'));
 
 const Spinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -36,17 +39,26 @@ const Spinner = () => (
 
 const AnimatedRoutes = () => {
   const location = useLocation();
-  const isTab = TAB_PATHS.includes(location.pathname);
-  const groupKey = isTab ? 'tabs' : location.pathname;
+  const isTabScoped = TAB_PATHS.some((p) =>
+    location.pathname === p || (p !== '/' && location.pathname.startsWith(p + '/'))
+  );
+  const groupKey = isTabScoped ? 'tabs' : location.pathname;
   return (
     <TabStackProvider>
       <Suspense fallback={<Spinner />}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={groupKey}>
             <Route element={<TabLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/moments" element={<Moments />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/" element={<TabOutletLayout />}>
+                <Route index element={<Home />} />
+              </Route>
+              <Route path="/moments" element={<TabOutletLayout />}>
+                <Route index element={<Moments />} />
+                <Route path=":id" element={<MomentDetail />} />
+              </Route>
+              <Route path="/settings" element={<TabOutletLayout />}>
+                <Route index element={<Settings />} />
+              </Route>
             </Route>
             <Route path="/login" element={<MotionPage><Login /></MotionPage>} />
             <Route path="/register" element={<MotionPage><Register /></MotionPage>} />
@@ -87,6 +99,7 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeColorSync />
       <AuthProvider>
         <SettingsProvider>
         <QueryClientProvider client={queryClientInstance}>
