@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import usePreRoll from '@/hooks/usePreRoll';
 import Header from '@/components/btau/Header';
@@ -15,9 +15,11 @@ import AutoCaptureToggle from '@/components/btau/AutoCaptureToggle';
 import PostRollPicker from '@/components/btau/PostRollPicker';
 import MaxAutoControl from '@/components/btau/MaxAutoControl';
 import BottomTabBar from '@/components/btau/BottomTabBar';
+import MomentSearch from '@/components/btau/MomentSearch';
 
 export default function Home() {
   const p = usePreRoll();
+  const [highlightId, setHighlightId] = useState(null);
   const rewindLabel = REWIND_OPTIONS.find((o) => o.value === p.rewind)?.label ?? `${p.rewind} s`;
 
   return (
@@ -50,7 +52,8 @@ export default function Home() {
             <div className="h-px bg-border" />
             <StealthToggle enabled={p.silentMode} onToggle={p.toggleSilent} />
           </section>
-          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} onDelete={p.remove} onRename={p.rename} onProtect={p.protect} onDeleteAllTemporary={p.deleteAllTemp} />
+          <MomentSearch recordings={p.recordings} onHighlight={setHighlightId} />
+          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} highlightId={highlightId} onDelete={p.remove} onRename={p.rename} onProtect={p.protect} onDeleteAllTemporary={p.deleteAllTemp} />
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
             Audio stays in memory only. Nothing is written until a spike or a tap, and clips never leave this device.
           </p>

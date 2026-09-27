@@ -24,6 +24,8 @@ const DEFAULTS = {
   inputDeviceId: '',
   arcEnabled: false,
   localOnly: true,
+  driveFolder: 'Back That App Up!',
+  locationTagging: true,
 };
 
 const load = () => {
@@ -122,6 +124,8 @@ export function SettingsProvider({ children }) {
     set({ arcEnabled: v });
   };
   const setLocalOnly = (v) => set({ localOnly: v });
+  const setDriveFolder = (v) => set({ driveFolder: v });
+  const setLocationTagging = (v) => set({ locationTagging: v });
 
   const value = {
     ...s,
@@ -131,7 +135,7 @@ export function SettingsProvider({ children }) {
     setRewind, setPostRoll, setExtendOnSecondTrigger, setTriggerCooldown, setPreventOverlaps,
     setVoiceArm, setPhrase, setCustomPhrases, setAutoCapture, setThreshold, setSustainedDuration,
     setSpikeCooldown, setMaxAuto, setTempRetentionMinutes, setQuality, setInputDeviceId,
-    setArcEnabled, setLocalOnly,
+    setArcEnabled, setLocalOnly, setDriveFolder, setLocationTagging,
   };
 
   return React.createElement(SettingsContext.Provider, { value }, children);

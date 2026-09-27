@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 
-const FOLDER_NAME = 'Back That App Up!';
+const DEFAULT_FOLDER = 'Back That App Up!';
 
 export default async function(req) {
   try {
@@ -12,6 +12,8 @@ export default async function(req) {
     const fileName = body.fileName;
     const mimeType = body.mimeType || 'audio/wav';
     const contentLength = Number(body.contentLength);
+    const folderName = (body.folderName && String(body.folderName).trim()) || DEFAULT_FOLDER;
+    const description = body.description ? String(body.description).slice(0, 5000) : undefined;
     if (!fileName || !contentLength) {
       return Response.json({ error: 'fileName and contentLength are required' }, { status: 400 });
     }
@@ -20,7 +22,8 @@ export default async function(req) {
     const auth = { Authorization: `Bearer ${accessToken}` };
 
     // Find or create the backup folder (app-created files are visible under drive.file)
-    const q = encodeURIComponent(`name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+    const safeName = folderName.replace(/'/g, "\\'");
+    const q = encodeURIComponent(`name='${safeName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
     const findRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, { headers: auth });
     const found = await findRes.json();
     let folderId = found.files?.[0]?.id;
@@ -28,14 +31,17 @@ export default async function(req) {
       const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' }),
+        body: JSON.stringify({ name: folderName, mimeType: 'application/vnd.google-apps.folder' }),
       });
       const created = await createRes.json();
       folderId = created.id;
     }
     if (!folderId) return Response.json({ error: 'Could not resolve backup folder' }, { status: 502 });
 
-    // Initiate a resumable upload session so the client can stream the bytes directly
+    // Initiate a resumable upload session so the client can stream the bytes directly.
+    const fileMeta = { name: fileName, parents: [folderId] };
+    if (description) fileMeta.description = description;
+
     const sessionRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
       method: 'POST',
       headers: {
@@ -44,7 +50,7 @@ export default async function(req) {
         'X-Upload-Content-Type': mimeType,
         'X-Upload-Content-Length': String(contentLength),
       },
-      body: JSON.stringify({ name: fileName, parents: [folderId] }),
+      body: JSON.stringify(fileMeta),
     });
     if (!sessionRes.ok) {
       const details = await sessionRes.text();
@@ -53,7 +59,7 @@ export default async function(req) {
     const uploadUrl = sessionRes.headers.get('Location');
     if (!uploadUrl) return Response.json({ error: 'No upload URL returned' }, { status: 502 });
 
-    return Response.json({ uploadUrl, folderId });
+    return Response.json({ uploadUrl, folderId, folderName });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

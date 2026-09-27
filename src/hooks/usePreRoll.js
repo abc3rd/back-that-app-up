@@ -10,6 +10,7 @@ import {
   cleanupTemporary,
   cleanupExpiredTemporary,
 } from '@/lib/preroll/storage';
+import { captureLocation, reverseGeocode, buildMetadata, metadataToDescription } from '@/lib/preroll/metadata';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,6 +25,7 @@ export default function usePreRoll() {
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
     effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown,
     threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
+    driveFolder, locationTagging,
   } = settings;
 
   const engineRef = useRef(null);
@@ -34,6 +36,8 @@ export default function usePreRoll() {
   const armRef = useRef(null);
   const recWantedRef = useRef(false);
   const silentRef = useRef(false);
+  const locRef = useRef(null);
+  const lastHeardRef = useRef('');
 
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -57,9 +61,15 @@ export default function usePreRoll() {
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
-  const backupToDrive = useCallback(async (blob, name) => {
+  const backupToDrive = useCallback(async (blob, name, meta) => {
     try {
-      const res = await base44.functions.invoke('createDriveUploadSession', { fileName: name, mimeType: 'audio/wav', contentLength: blob.size });
+      const res = await base44.functions.invoke('createDriveUploadSession', {
+        fileName: name,
+        mimeType: 'audio/wav',
+        contentLength: blob.size,
+        folderName: driveFolder,
+        description: meta ? metadataToDescription(meta) : undefined,
+      });
       const uploadUrl = res.data?.uploadUrl;
       if (!uploadUrl) throw new Error('No upload URL');
       const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/wav' }, body: blob });
@@ -68,11 +78,21 @@ export default function usePreRoll() {
     } catch (e) {
       toast({ variant: 'destructive', description: 'Google Drive backup failed' });
     }
-  }, [toast]);
+  }, [toast, driveFolder]);
 
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, triggerType, triggerTimestamp, triggerOffsetMs }) => {
     const ts = triggerTimestamp || Date.now();
     const protectedCapture = triggerType === 'button' || triggerType === 'voice';
+    const rawLoc = locRef.current;
+    let loc = null;
+    if (rawLoc) {
+      let place = null;
+      if (protectedCapture) place = await reverseGeocode(rawLoc.lat, rawLoc.long);
+      loc = { lat: rawLoc.lat, long: rawLoc.long, accuracy: rawLoc.accuracy, place: place?.place || null, locality: place?.locality || null };
+    }
+    const transcript = triggerType === 'voice' ? lastHeardRef.current : null;
+    const tags = [triggerType, format(ts, 'EEEE'), format(ts, 'a'), loc?.place].filter(Boolean);
+    const meta = buildMetadata({ timestamp: ts, triggerType, peakDb, durationMs, location: loc, transcript, tags });
     const rec = {
       id: `${ts}_${Math.random().toString(36).slice(2, 7)}`,
       name: `btau_${format(ts, 'yyyy-MM-dd_HH-mm-ss')}_${triggerType}.wav`,
@@ -86,6 +106,10 @@ export default function usePreRoll() {
       triggerOffsetMs,
       protected: protectedCapture,
       temporary: !protectedCapture,
+      location: loc,
+      tags,
+      transcript,
+      meta,
       blob,
     };
     setRecordings((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
@@ -97,7 +121,7 @@ export default function usePreRoll() {
       if (!protectedCapture) await cleanupTemporary(maxAuto);
       if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
       refresh();
-      if (protectedCapture) backupToDrive(blob, rec.name);
+      if (protectedCapture) backupToDrive(blob, rec.name, meta);
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       toast({ variant: 'destructive', description: 'Failed to save capture' });
@@ -124,6 +148,7 @@ export default function usePreRoll() {
       const text = Array.from(e.results).map((r) => r[0].transcript).join(' ').toLowerCase();
       if (!phrases.some((p) => text.includes(p))) return;
       setVoiceHeard(true);
+      lastHeardRef.current = text;
       setTimeout(() => setVoiceHeard(false), 1500);
       if (listeningRef.current && engineRef.current) {
         engineRef.current.voiceCapture();
@@ -157,6 +182,7 @@ export default function usePreRoll() {
     setError(null);
     recWantedRef.current = false;
     stopRec();
+    if (locationTagging) captureLocation().then((l) => { locRef.current = l; });
     const engine = new PreRollEngine({
       onLevel: setDb,
       onCapture: handleCapture,
@@ -263,7 +289,7 @@ export default function usePreRoll() {
       const saved = await protectRecording(id);
       if (saved) {
         setRecordings((prev) => prev.map((r) => (r.id === id ? saved : r)));
-        backupToDrive(saved.blob, saved.name);
+        backupToDrive(saved.blob, saved.name, saved.meta);
       } else {
         setRecordings((prev) => prev.map((r) => (r.id === id ? rec : r)));
         toast({ variant: 'destructive', description: 'Failed to protect capture' });

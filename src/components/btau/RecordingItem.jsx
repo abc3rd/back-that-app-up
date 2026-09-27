@@ -4,8 +4,9 @@ import { Download, Pause, Pencil, Play, Shield, Trash2 } from 'lucide-react';
 
 const TRIGGER_LABEL = { voice: 'voice', button: 'manual', spike: 'spike' };
 
-export default function RecordingItem({ rec, fresh, onDelete, onRename, onProtect }) {
+export default function RecordingItem({ rec, fresh, highlight, onDelete, onRename, onProtect }) {
   const audioRef = useRef(null);
+  const rootRef = useRef(null);
   const [url, setUrl] = useState();
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -22,6 +23,10 @@ export default function RecordingItem({ rec, fresh, onDelete, onRename, onProtec
     return () => URL.revokeObjectURL(u);
   }, [rec.blob]);
 
+  useEffect(() => {
+    if (highlight && rootRef.current) rootRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlight]);
+
   const toggle = () => (playing ? audioRef.current.pause() : audioRef.current.play());
   const startEdit = () => { setDraft(label); setEditing(true); };
   const commit = () => {
@@ -31,7 +36,7 @@ export default function RecordingItem({ rec, fresh, onDelete, onRename, onProtec
   };
 
   return (
-    <div className={`flex flex-col gap-3 rounded-2xl border p-4 transition-colors duration-700 ${fresh ? 'border-primary/60 bg-primary/10 glow-cyan' : 'bg-card'}`}>
+    <div ref={rootRef} className={`flex flex-col gap-3 rounded-2xl border p-4 transition-colors duration-700 ${highlight ? 'border-accent glow-magenta' : fresh ? 'border-primary/60 bg-primary/10 glow-cyan' : 'bg-card'}`}>
       <div className="flex items-center gap-4">
         <audio
           ref={audioRef}
@@ -61,6 +66,12 @@ export default function RecordingItem({ rec, fresh, onDelete, onRename, onProtec
           <p className="mt-0.5 truncate font-mono text-sm text-muted-foreground">
             {(rec.durationMs / 1000).toFixed(1)}s · {Math.round(rec.sizeBytes / 1024)} KB · {rec.peakDb.toFixed(0)} dB · {triggerLabel}{isTemporary ? ' · temporary' : ''}
           </p>
+          {(rec.location?.locality || (rec.tags && rec.tags.length > 0)) && (
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+              {rec.location?.locality ? `📍 ${rec.location.locality}` : ''}
+              {rec.tags && rec.tags.length > 0 ? ` · ${rec.tags.join(' · ')}` : ''}
+            </p>
+          )}
         </div>
         {isTemporary && (
           <button aria-label="Keep capture" title="Keep (protect)" onClick={() => onProtect?.(rec.id)} className="select-none p-2 text-muted-foreground transition-colors hover:text-primary">
