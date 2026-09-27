@@ -13,14 +13,18 @@ export default class PreRollEngine {
 
   async start(rewindSeconds, threshold) {
     this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
     });
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await this.ctx.resume();
     this.source = this.ctx.createMediaStreamSource(this.stream);
     this.node = this.ctx.createScriptProcessor(4096, 1, 1);
     this.node.onaudioprocess = (e) => this.process(e.inputBuffer.getChannelData(0));
+    const sink = this.ctx.createGain();
+    sink.gain.value = 0;
     this.source.connect(this.node);
-    this.node.connect(this.ctx.destination);
+    this.node.connect(sink);
+    sink.connect(this.ctx.destination);
     this.pos = 0;
     this.threshold = threshold;
     this.setRewind(rewindSeconds);

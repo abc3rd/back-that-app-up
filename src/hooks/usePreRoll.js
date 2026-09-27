@@ -12,11 +12,12 @@ export default function usePreRoll() {
   const recRef = useRef(null);
   const listeningRef = useRef(false);
   const voiceArmRef = useRef(false);
+  const armRef = useRef(null);
 
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [db, setDb] = useState(0);
-  const [threshold, setThreshold] = useState(() => stored('btau.threshold', 75));
+  const [threshold, setThreshold] = useState(() => stored('btau.threshold.v2', 55));
   const [rewind, setRewind] = useState(() => stored('btau.rewind', 10));
   const [recordings, setRecordings] = useState([]);
   const [lastSavedId, setLastSavedId] = useState(null);
@@ -53,7 +54,7 @@ export default function usePreRoll() {
     stopRec();
     const rec = new SR();
     rec.continuous = true;
-    rec.interimResults = false;
+    rec.interimResults = true;
     rec.lang = 'en-US';
     rec.onresult = (e) => {
       const text = Array.from(e.results).map((r) => r[0].transcript).join(' ').toLowerCase();
@@ -61,13 +62,13 @@ export default function usePreRoll() {
         setVoiceHeard(true);
         setTimeout(() => setVoiceHeard(false), 1500);
         stopRec();
-        arm();
+        armRef.current?.();
       }
     };
     rec.onerror = () => {};
     rec.onend = () => {
       if (voiceArmRef.current && !listeningRef.current) {
-        try { rec.start(); } catch {}
+        setTimeout(() => { try { rec.start(); } catch {} }, 300);
       }
     };
     try { rec.start(); recRef.current = rec; } catch {}
@@ -75,6 +76,7 @@ export default function usePreRoll() {
 
   const arm = async () => {
     setError(null);
+    stopRec();
     const engine = new PreRollEngine({ onLevel: setDb, onCapture: handleCapture, onCaptureStart: () => setCapturing(true) });
     try {
       await engine.start(rewind, threshold);
@@ -84,9 +86,10 @@ export default function usePreRoll() {
     }
     engineRef.current = engine;
     setListening(true);
-    stopRec();
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
   };
+
+  useEffect(() => { armRef.current = arm; }, [arm]);
 
   const disarm = () => {
     engineRef.current?.stop();
@@ -100,7 +103,7 @@ export default function usePreRoll() {
 
   const changeThreshold = (v) => {
     setThreshold(v);
-    localStorage.setItem('btau.threshold', v);
+    localStorage.setItem('btau.threshold.v2', v);
     if (engineRef.current) engineRef.current.threshold = v;
   };
 
