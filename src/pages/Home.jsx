@@ -9,6 +9,7 @@ import ThresholdControl from '@/components/btau/ThresholdControl';
 import RewindPicker, { REWIND_OPTIONS } from '@/components/btau/RewindPicker';
 import RecordingsList from '@/components/btau/RecordingsList';
 import VoiceTrigger from '@/components/btau/VoiceTrigger';
+import StealthToggle from '@/components/btau/StealthToggle';
 import PullToRefresh from '@/components/PullToRefresh';
 
 export default function Home() {
@@ -38,6 +39,8 @@ export default function Home() {
             <div className="h-px bg-border" />
             <ThresholdControl value={p.threshold} onChange={p.changeThreshold} />
             <RewindPicker value={p.rewind} onChange={p.changeRewind} />
+            <div className="h-px bg-border" />
+            <StealthToggle enabled={p.silentMode} onToggle={p.toggleSilent} />
           </section>
           <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} onDelete={p.remove} onRename={p.rename} />
           <p className="text-center text-xs leading-relaxed text-muted-foreground">

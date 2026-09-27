@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import PreRollEngine from '@/lib/preroll/PreRollEngine';
 import { deleteRecording, listRecordings, saveRecording } from '@/lib/preroll/storage';
+import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 
 const stored = (key, fallback) => Number(localStorage.getItem(key)) || fallback;
 const PHRASE = 'back that app up';
@@ -25,9 +26,12 @@ export default function usePreRoll() {
   const [voiceHeard, setVoiceHeard] = useState(false);
   const [voiceSupported] = useState(() => typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
   const [voiceArm, setVoiceArm] = useState(false);
+  const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') === '1');
+  const silentRef = useRef(silentMode);
 
   useEffect(() => { listeningRef.current = listening; }, [listening]);
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
+  useEffect(() => { silentRef.current = silentMode; }, [silentMode]);
 
   const refresh = useCallback(async () => setRecordings(await listRecordings()), []);
   useEffect(() => { refresh(); }, [refresh]);
@@ -40,6 +44,7 @@ export default function usePreRoll() {
     setCapturing(false);
     setLastSavedId(rec.id);
     refresh();
+    if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
   }, [refresh]);
 
   const stopRec = useCallback(() => {
@@ -77,7 +82,7 @@ export default function usePreRoll() {
   const arm = async () => {
     setError(null);
     stopRec();
-    const engine = new PreRollEngine({ onLevel: setDb, onCapture: handleCapture, onCaptureStart: () => setCapturing(true) });
+    const engine = new PreRollEngine({ onLevel: setDb, onCapture: handleCapture, onCaptureStart: () => { setCapturing(true); if (!silentRef.current) showStatus('Back That App Up! — Capturing', 'Spike detected — saving the moment…'); } });
     try {
       await engine.start(rewind, threshold);
     } catch (err) {
@@ -86,6 +91,7 @@ export default function usePreRoll() {
     }
     engineRef.current = engine;
     setListening(true);
+    if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
   };
 
@@ -98,6 +104,7 @@ export default function usePreRoll() {
     setListening(false);
     setCapturing(false);
     setDb(0);
+    hideStatus();
     if (voiceArmRef.current) startRec();
   };
 
@@ -120,6 +127,17 @@ export default function usePreRoll() {
     if (next) startRec(); else stopRec();
   };
 
+  const toggleSilent = () => {
+    setSilentMode((prev) => {
+      const next = !prev;
+      silentRef.current = next;
+      localStorage.setItem('btau.silent', next ? '1' : '0');
+      if (next) hideStatus();
+      else if (listeningRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
+      return next;
+    });
+  };
+
   const backThatAppUp = () => engineRef.current?.saveNow();
   const remove = async (id) => { await deleteRecording(id); refresh(); };
   const rename = async (id, label) => {
@@ -130,5 +148,5 @@ export default function usePreRoll() {
     setRecordings((prev) => prev.map((r) => (r.id === id ? updated : r)));
   };
 
-  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, refresh, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, rename, toggleVoiceArm, dismissError: () => setError(null) };
+  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, silentMode, refresh, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, rename, toggleVoiceArm, toggleSilent, dismissError: () => setError(null) };
 }
