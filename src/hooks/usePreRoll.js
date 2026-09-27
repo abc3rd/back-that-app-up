@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import PreRollEngine from '@/lib/preroll/PreRollEngine';
 import { deleteRecording, listRecordings, saveRecording } from '@/lib/preroll/storage';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
+import { base44 } from '@/api/base44Client';
+import { useToast } from '@/components/ui/use-toast';
 
 const stored = (key, fallback) => Number(localStorage.getItem(key)) || fallback;
 const PHRASE = 'back that app up';
@@ -29,6 +31,7 @@ export default function usePreRoll() {
   const [voiceArm, setVoiceArm] = useState(() => typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition));
   const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') === '1');
   const silentRef = useRef(silentMode);
+  const { toast } = useToast();
 
   useEffect(() => { listeningRef.current = listening; }, [listening]);
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
@@ -38,6 +41,19 @@ export default function usePreRoll() {
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
+  const backupToDrive = useCallback(async (blob, name) => {
+    try {
+      const res = await base44.functions.invoke('createDriveUploadSession', { fileName: name, mimeType: 'audio/wav', contentLength: blob.size });
+      const uploadUrl = res.data?.uploadUrl;
+      if (!uploadUrl) throw new Error('No upload URL');
+      const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'audio/wav' }, body: blob });
+      if (!putRes.ok) throw new Error('Upload failed');
+      toast({ description: 'Recording backed up to Google Drive' });
+    } catch (e) {
+      toast({ variant: 'destructive', description: 'Google Drive backup failed' });
+    }
+  }, [toast]);
+
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, reason }) => {
     const ts = Date.now();
     const rec = { id: String(ts), name: `btau_${format(ts, 'yyyy-MM-dd_HH-mm-ss')}.wav`, label: format(ts, 'MMM d · HH:mm:ss'), timestamp: ts, durationMs, sizeBytes: blob.size, peakDb, reason, blob };
@@ -45,8 +61,9 @@ export default function usePreRoll() {
     setCapturing(false);
     setLastSavedId(rec.id);
     refresh();
+    backupToDrive(blob, rec.name);
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh]);
+  }, [refresh, backupToDrive]);
 
   const stopRec = useCallback(() => {
     const r = recRef.current;
