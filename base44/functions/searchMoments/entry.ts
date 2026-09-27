@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
+import { assertEntitled } from '../../shared/entitlements.ts';
 
 // AI moment retrieval: ranks the user's recordings against a natural-language
 // (often voice) query using their captured metadata. InvokeLLM must run here
@@ -8,6 +9,9 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const ent = await assertEntitled(base44, user);
+    if (!ent.ok) return Response.json({ error: ent.error }, { status: ent.status });
 
     const body = await req.json();
     const query = String(body.query || '').slice(0, 500);

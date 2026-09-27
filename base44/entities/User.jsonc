@@ -7,6 +7,15 @@
         "admin",
         "user"
       ]
+    },
+    "plan": {
+      "type": "string",
+      "description": "Subscription plan; server-side source of truth for paid-feature entitlement",
+      "enum": [
+        "free",
+        "pro"
+      ],
+      "default": "free"
     }
   },
   "required": [

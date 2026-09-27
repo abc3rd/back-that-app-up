@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
+import { assertEntitled } from '../../shared/entitlements.ts';
 
 // Invoked by the "Transcribe Moment" workflow whenever a Moment record is
 // created. Signs the private audio URI, transcribes it, and writes the
@@ -19,6 +20,12 @@ export default async function(req) {
     if (!moment) return Response.json({ error: 'Moment not found' }, { status: 404 });
     if (moment.created_by_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
     if (!moment.audio_uri) return Response.json({ error: 'Moment has no audio' }, { status: 400 });
+
+    const ent = await assertEntitled(base44, user);
+    if (!ent.ok) {
+      await base44.asServiceRole.entities.Moment.update(momentId, { status: 'failed' });
+      return Response.json({ error: ent.error }, { status: ent.status });
+    }
 
     await base44.asServiceRole.entities.Moment.update(momentId, { status: 'transcribing' });
 

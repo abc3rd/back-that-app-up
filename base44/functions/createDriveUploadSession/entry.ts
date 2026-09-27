@@ -12,7 +12,8 @@ export default async function(req) {
     const fileName = String(body.fileName || '');
     const mimeType = 'audio/wav'; // privileged uploads are audio captures only
     const contentLength = Number(body.contentLength);
-    const folderName = (body.folderName && String(body.folderName).trim()) || DEFAULT_FOLDER;
+    const folderNameRaw = (body.folderName && String(body.folderName).trim()) || '';
+    const folderName = /^[\w .!-]{1,40}$/.test(folderNameRaw) ? folderNameRaw : DEFAULT_FOLDER;
     const description = body.description ? String(body.description).slice(0, 5000) : undefined;
     const MAX_BYTES = 262144000; // 250 MB cap per upload
     if (!/^btau_[\w.-]+\.wav$/.test(fileName)) {
@@ -20,6 +21,14 @@ export default async function(req) {
     }
     if (!Number.isFinite(contentLength) || contentLength <= 0 || contentLength > MAX_BYTES) {
       return Response.json({ error: 'Invalid or oversized file' }, { status: 400 });
+    }
+
+    const DRIVE_QUOTA_BYTES = 1073741824; // 1 GB cumulative per user
+    const usagePage = await base44.asServiceRole.entities.DriveUsage.filter({ user_id: user.id }, { limit: 1 });
+    const usageRec = usagePage.items?.[0];
+    const usedBytes = Number(usageRec?.total_bytes) || 0;
+    if (usedBytes + contentLength > DRIVE_QUOTA_BYTES) {
+      return Response.json({ error: 'Google Drive backup quota exceeded' }, { status: 429 });
     }
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('googledrive');
@@ -61,6 +70,12 @@ export default async function(req) {
     }
     const uploadUrl = sessionRes.headers.get('Location');
     if (!uploadUrl) return Response.json({ error: 'No upload URL returned' }, { status: 502 });
+
+    if (usageRec?.id) {
+      await base44.asServiceRole.entities.DriveUsage.update(usageRec.id, { total_bytes: usedBytes + contentLength });
+    } else {
+      await base44.asServiceRole.entities.DriveUsage.create({ user_id: user.id, total_bytes: contentLength });
+    }
 
     return Response.json({ uploadUrl, folderId, folderName });
   } catch (error) {

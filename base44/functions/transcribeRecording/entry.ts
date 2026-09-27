@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
+import { assertEntitled } from '../../shared/entitlements.ts';
 
 // Transcribe a previously-uploaded audio file. TranscribeAudio must run server
 // side (service role). The client uploads the blob to public storage first,
@@ -8,6 +9,9 @@ export default async function(req) {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const ent = await assertEntitled(base44, user);
+    if (!ent.ok) return Response.json({ error: ent.error }, { status: ent.status });
 
     const body = await req.json();
     const audioUrl = String(body.audioUrl || '');
