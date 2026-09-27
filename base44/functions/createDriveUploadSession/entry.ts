@@ -26,7 +26,7 @@ export default async function(req) {
     const auth = { Authorization: `Bearer ${accessToken}` };
 
     // Find or create the backup folder (app-created files are visible under drive.file)
-    const safeName = folderName.replace(/'/g, "\\'");
+    const safeName = folderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const q = encodeURIComponent(`name='${safeName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
     const findRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, { headers: auth });
     const found = await findRes.json();

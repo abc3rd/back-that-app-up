@@ -8,12 +8,16 @@ export default async function(req) {
   let momentId = '';
   try {
     base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     momentId = String(body.momentId || '');
     if (!momentId) return Response.json({ error: 'Missing momentId' }, { status: 400 });
 
     const moment = await base44.asServiceRole.entities.Moment.get(momentId);
     if (!moment) return Response.json({ error: 'Moment not found' }, { status: 404 });
+    if (moment.created_by_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
     if (!moment.audio_uri) return Response.json({ error: 'Moment has no audio' }, { status: 400 });
 
     await base44.asServiceRole.entities.Moment.update(momentId, { status: 'transcribing' });
