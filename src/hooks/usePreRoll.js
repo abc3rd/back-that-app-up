@@ -120,5 +120,5 @@ export default function usePreRoll() {
   const backThatAppUp = () => engineRef.current?.saveNow();
   const remove = async (id) => { await deleteRecording(id); refresh(); };
 
-  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, toggleVoiceArm, dismissError: () => setError(null) };
+  return { listening, capturing, db, threshold, rewind, recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, refresh, arm, disarm, changeThreshold, changeRewind, backThatAppUp, remove, toggleVoiceArm, dismissError: () => setError(null) };
 }

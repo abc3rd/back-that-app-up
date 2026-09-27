@@ -90,4 +90,9 @@
   body {
     @apply bg-background text-foreground font-body;
   }
+
+  button, [role='button'], .select-none-ui {
+    user-select: none;
+    -webkit-user-select: none;
+  }
 }

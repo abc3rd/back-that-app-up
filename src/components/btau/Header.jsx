@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 export default function Header({ listening, capturing }) {
+  const navigate = useNavigate();
   const label = capturing ? 'Capturing' : listening ? 'Listening' : 'Idle';
   const dot = capturing ? 'bg-primary animate-pulse' : listening ? 'bg-emerald-400' : 'bg-muted-foreground/50';
   return (
@@ -11,10 +14,19 @@ export default function Header({ listening, capturing }) {
           Back That <em className="text-primary">App</em> Up!
         </h1>
       </div>
-      <span className="mt-1 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs text-muted-foreground">
-        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        {label}
-      </span>
+      <div className="mt-1 flex items-center gap-2">
+        <button
+          aria-label="Settings"
+          onClick={() => navigate('/settings')}
+          className="flex h-9 w-9 select-none items-center justify-center rounded-full border text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <SettingsIcon className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+        <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs text-muted-foreground">
+          <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+          {label}
+        </span>
+      </div>
     </header>
   );
 }
