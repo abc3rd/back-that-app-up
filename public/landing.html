@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Back That App Up! - Ambient, Privacy-First Audio Capture</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (CDN for the standalone landing page; for WebView performance, bundle & tree-shake Tailwind + FontAwesome into local assets instead of loading at runtime) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -870,7 +870,32 @@
             }
 
             waveOffset += 0.08;
-            animationFrameId = requestAnimationFrame(drawWaveform);
+            if (running) animationFrameId = requestAnimationFrame(drawWaveform);
+        }
+
+        // Pause/resume the waveform rAF loop when the page is hidden or the
+        // canvas scrolls out of view, to avoid CPU drain in background tabs.
+        let running = true;
+        function stopWaveform() {
+            running = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+        function startWaveform() {
+            if (running) return;
+            running = true;
+            drawWaveform();
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopWaveform(); else startWaveform();
+        });
+        if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) startWaveform(); else stopWaveform();
+                });
+            }, { threshold: 0.01 });
+            io.observe(canvas);
         }
 
         // Live Clock Counter
