@@ -114,4 +114,6 @@
   .glow-magenta { box-shadow: 0 0 16px rgba(255, 0, 255, 0.45); }
   .glow-neon { box-shadow: 0 0 20px rgba(0, 242, 255, 0.35), 0 0 30px rgba(255, 0, 255, 0.25); }
   .glow-neon-soft { box-shadow: 0 0 10px rgba(0, 242, 255, 0.18), 0 0 18px rgba(255, 0, 255, 0.12); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }

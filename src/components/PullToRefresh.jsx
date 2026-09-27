@@ -1,8 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { ChevronDown, Loader2 } from 'lucide-react';
 
-export default function PullToRefresh({ onRefresh, children }) {
+export default function PullToRefresh({ onRefresh, children, containerRef }) {
   const ref = useRef(null);
+  const setRef = (el) => {
+    ref.current = el;
+    if (typeof containerRef === 'function') containerRef(el);
+    else if (containerRef) containerRef.current = el;
+  };
   const startY = useRef(0);
   const pulling = useRef(false);
   const [pull, setPull] = useState(0);
@@ -44,11 +49,11 @@ export default function PullToRefresh({ onRefresh, children }) {
 
   return (
     <div
-      ref={ref}
+      ref={setRef}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      className="h-screen overflow-y-auto overscroll-none"
+      className="h-screen overflow-y-auto overscroll-none no-scrollbar"
     >
       <div
         className="pointer-events-none absolute left-0 right-0 top-0 flex justify-center pt-2"

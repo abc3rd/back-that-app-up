@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import usePreRoll from '@/hooks/usePreRoll';
+import { useTabScroll } from '@/hooks/useTabScroll';
 import Onboarding from '@/components/btau/Onboarding';
 import Header from '@/components/btau/Header';
 import ArmControl from '@/components/btau/ArmControl';
@@ -15,18 +16,19 @@ import PullToRefresh from '@/components/PullToRefresh';
 import AutoCaptureToggle from '@/components/btau/AutoCaptureToggle';
 import PostRollPicker from '@/components/btau/PostRollPicker';
 import MaxAutoControl from '@/components/btau/MaxAutoControl';
-import BottomTabBar from '@/components/btau/BottomTabBar';
 import MomentSearch from '@/components/btau/MomentSearch';
 import PublicFooter from '@/components/btau/PublicFooter';
 
 export default function Home() {
+  const scrollRef = useRef(null);
+  useTabScroll('/', scrollRef);
   const p = usePreRoll();
   const [highlightId, setHighlightId] = useState(null);
   const [onboarded, setOnboarded] = useState(() => localStorage.getItem('btau.onboarded') === '1');
   const rewindLabel = REWIND_OPTIONS.find((o) => o.value === p.rewind)?.label ?? `${p.rewind} s`;
 
   return (
-    <PullToRefresh onRefresh={p.refresh}>
+    <PullToRefresh containerRef={scrollRef} onRefresh={p.refresh}>
       <div className="min-h-screen bg-background text-foreground">
         {!onboarded && <Onboarding onDone={() => setOnboarded(true)} />}
         <main className="mx-auto flex max-w-md flex-col gap-12 px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
@@ -64,7 +66,6 @@ export default function Home() {
           <PublicFooter />
         </main>
       </div>
-      <BottomTabBar />
     </PullToRefresh>
   );
 }

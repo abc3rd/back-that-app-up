@@ -18,7 +18,7 @@ export default function PostRollPicker({ value, onChange }) {
           <button
             key={o.value}
             onClick={() => onChange(o.value)}
-            className={`min-h-[44px] rounded-full py-3 text-sm transition-all duration-300 ${value === o.value ? 'bg-gradient-to-r from-[#00F2FF] to-[#FF00FF] text-[#050508] glow-neon-soft' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`min-h-[44px] rounded-full py-3 text-sm transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${value === o.value ? 'bg-gradient-to-r from-[#00F2FF] to-[#FF00FF] text-[#050508] glow-neon-soft' : 'text-muted-foreground hover:text-foreground'}`}
           >
             {o.label}
           </button>

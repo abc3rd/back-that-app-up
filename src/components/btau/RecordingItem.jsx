@@ -74,17 +74,17 @@ export default function RecordingItem({ rec, fresh, highlight, onDelete, onRenam
           )}
         </div>
         {isTemporary && (
-          <button aria-label="Keep capture" title="Keep (protect)" onClick={() => onProtect?.(rec.id)} className="select-none p-2 text-muted-foreground transition-colors hover:text-primary">
+          <button aria-label="Keep capture" title="Keep (protect)" onClick={() => onProtect?.(rec.id)} className="flex min-h-[44px] min-w-[44px] items-center justify-center select-none text-muted-foreground transition-colors hover:text-primary">
             <Shield className="h-4 w-4" />
           </button>
         )}
-        <button aria-label="Rename clip" onClick={startEdit} className="select-none p-2 text-muted-foreground transition-colors hover:text-foreground">
+        <button aria-label="Rename clip" onClick={startEdit} className="flex min-h-[44px] min-w-[44px] items-center justify-center select-none text-muted-foreground transition-colors hover:text-foreground">
           <Pencil className="h-4 w-4" />
         </button>
-        <a href={url} download={rec.name} aria-label={`Download ${rec.name}`} className="select-none p-2 text-muted-foreground transition-colors hover:text-foreground">
+        <a href={url} download={rec.name} aria-label={`Download ${rec.name}`} className="flex min-h-[44px] min-w-[44px] items-center justify-center select-none text-muted-foreground transition-colors hover:text-foreground">
           <Download className="h-4 w-4" />
         </a>
-        <button aria-label="Delete recording" onClick={() => onDelete(rec.id)} className="select-none p-2 text-muted-foreground transition-colors hover:text-primary">
+        <button aria-label="Delete recording" onClick={() => onDelete(rec.id)} className="flex min-h-[44px] min-w-[44px] items-center justify-center select-none text-muted-foreground transition-colors hover:text-primary">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>

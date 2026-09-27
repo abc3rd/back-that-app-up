@@ -11,7 +11,10 @@ import { SettingsProvider } from '@/hooks/useSettings';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import MotionPage from '@/components/MotionPage';
-import Home from './pages/Home';
+import TabLayout from '@/components/btau/TabLayout';
+import { TabStackProvider, TAB_PATHS } from '@/hooks/useTabStack';
+
+const Home = lazy(() => import('./pages/Home'));
 
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -31,24 +34,30 @@ const Spinner = () => (
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+  const isTab = TAB_PATHS.includes(location.pathname);
+  const groupKey = isTab ? 'tabs' : location.pathname;
   return (
-    <Suspense fallback={<Spinner />}>
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<MotionPage><Home /></MotionPage>} />
-          <Route path="/login" element={<MotionPage><Login /></MotionPage>} />
-          <Route path="/register" element={<MotionPage><Register /></MotionPage>} />
-          <Route path="/forgot-password" element={<MotionPage><ForgotPassword /></MotionPage>} />
-          <Route path="/reset-password" element={<MotionPage><ResetPassword /></MotionPage>} />
-          <Route path="/oauth-consent" element={<MotionPage><OAuthConsent /></MotionPage>} />
-          <Route path="/settings" element={<MotionPage><Settings /></MotionPage>} />
-          <Route path="/about" element={<MotionPage><About /></MotionPage>} />
-          <Route path="/contact" element={<MotionPage><Contact /></MotionPage>} />
-          <Route path="/moments" element={<MotionPage><Moments /></MotionPage>} />
-          <Route path="*" element={<MotionPage><PageNotFound /></MotionPage>} />
-        </Routes>
-      </AnimatePresence>
-    </Suspense>
+    <TabStackProvider>
+      <Suspense fallback={<Spinner />}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={groupKey}>
+            <Route element={<TabLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/moments" element={<Moments />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+            <Route path="/login" element={<MotionPage><Login /></MotionPage>} />
+            <Route path="/register" element={<MotionPage><Register /></MotionPage>} />
+            <Route path="/forgot-password" element={<MotionPage><ForgotPassword /></MotionPage>} />
+            <Route path="/reset-password" element={<MotionPage><ResetPassword /></MotionPage>} />
+            <Route path="/oauth-consent" element={<MotionPage><OAuthConsent /></MotionPage>} />
+            <Route path="/about" element={<MotionPage><About /></MotionPage>} />
+            <Route path="/contact" element={<MotionPage><Contact /></MotionPage>} />
+            <Route path="*" element={<MotionPage><PageNotFound /></MotionPage>} />
+          </Routes>
+        </AnimatePresence>
+      </Suspense>
+    </TabStackProvider>
   );
 };
 

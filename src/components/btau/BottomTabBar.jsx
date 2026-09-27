@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTabStack } from '@/hooks/useTabStack';
 import { Home as HomeIcon, Settings as SettingsIcon, Voicemail } from 'lucide-react';
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
 export default function BottomTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { reset } = useTabStack();
   const activePath = TABS.some((t) => t.path === location.pathname) ? location.pathname : '/';
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
@@ -21,7 +23,7 @@ export default function BottomTabBar() {
           return (
             <button
               key={t.path}
-              onClick={() => navigate(t.path)}
+              onClick={() => { if (isActive) reset(t.path); else navigate(t.path); }}
               aria-current={isActive ? 'page' : undefined}
               className={`flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
             >
