@@ -9,6 +9,7 @@ import {
   deleteAllTemporary,
   cleanupTemporary,
   cleanupExpiredTemporary,
+  cleanupExpiredRecordings,
 } from '@/lib/preroll/storage';
 import { captureLocation, reverseGeocode, buildMetadata, metadataToDescription } from '@/lib/preroll/metadata';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
@@ -23,7 +24,7 @@ export default function usePreRoll() {
   const settings = useSettings();
   const {
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
-    effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown,
+    effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown, effRecordingRetentionDays,
     threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
     driveFolder, locationTagging,
   } = settings;
@@ -56,8 +57,9 @@ export default function usePreRoll() {
 
   const refresh = useCallback(async () => {
     if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
+    if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
     setRecordings(await listRecordings());
-  }, [effTempRetentionMinutes]);
+  }, [effTempRetentionMinutes, effRecordingRetentionDays]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
@@ -120,6 +122,7 @@ export default function usePreRoll() {
       base44.analytics.track({ eventName: 'recording_saved' });
       if (!protectedCapture) await cleanupTemporary(maxAuto);
       if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
+      if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
       refresh();
       if (protectedCapture) backupToDrive(blob, rec.name, meta);
     } catch (e) {
@@ -127,7 +130,7 @@ export default function usePreRoll() {
       toast({ variant: 'destructive', description: 'Failed to save capture' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, toast]);
+  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, toast]);
 
   const stopRec = useCallback(() => {
     const r = recRef.current;

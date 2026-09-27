@@ -67,6 +67,17 @@ export const cleanupExpiredTemporary = async (retentionMinutes) => {
   return expired.length;
 };
 
+// Delete every recording (protected and temporary) older than `retentionDays`.
+export const cleanupExpiredRecordings = async (retentionDays) => {
+  if (!retentionDays || retentionDays <= 0) return 0;
+  const all = await run('readonly', (s) => s.getAll());
+  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const expired = all.filter((r) => r.timestamp < cutoff);
+  if (!expired.length) return 0;
+  await run('readwrite', (s) => { expired.forEach((r) => s.delete(r.id)); });
+  return expired.length;
+};
+
 // Delete every recording (protected and temporary).
 export const deleteAllRecordings = async () => {
   const all = await run('readonly', (s) => s.getAll());

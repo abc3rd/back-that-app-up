@@ -62,6 +62,12 @@ export default function StorageSection() {
           <span className="w-16 text-right font-mono text-sm">{s.effTempRetentionMinutes === 0 ? 'off' : `${s.effTempRetentionMinutes}m`}</span>
         </div>
       </SettingRow>
+      <SettingRow title="Auto-cleanup after" description="Delete all recordings older than this to free device storage">
+        <div className="flex items-center gap-2">
+          <Slider value={[s.effRecordingRetentionDays]} min={0} max={90} step={1} onValueChange={(a) => s.setRecordingRetentionDays(a[0])} className="w-28" />
+          <span className="w-16 text-right font-mono text-sm">{s.effRecordingRetentionDays === 0 ? 'off' : `${s.effRecordingRetentionDays}d`}</span>
+        </div>
+      </SettingRow>
       <SettingRow title="Auto-delete oldest temporary" description="Beyond the limit, the oldest unprotected capture is removed">
         <span className="text-sm text-primary">On</span>
       </SettingRow>
