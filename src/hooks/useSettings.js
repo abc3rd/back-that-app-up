@@ -27,6 +27,8 @@ const DEFAULTS = {
   driveFolder: 'Back That App Up!',
   locationTagging: true,
   recordingRetentionDays: 0,
+  aiTranscription: false,
+  autoListen: false,
 };
 
 const load = () => {
@@ -76,6 +78,7 @@ export function SettingsProvider({ children }) {
   const effSpikeCooldown = can(FEATURES.SPIKE_COOLDOWN) ? s.spikeCooldown : 2;
   const effTempRetentionMinutes = can(FEATURES.TEMP_RETENTION_DURATION) ? s.tempRetentionMinutes : 0;
   const effRecordingRetentionDays = s.recordingRetentionDays;
+  const effAiTranscription = can(FEATURES.AI_TRANSCRIPTION) ? s.aiTranscription : false;
 
   // Setters — gating is centralized here so components don't scatter paywall checks.
   const setRewind = (v) => {
@@ -129,16 +132,22 @@ export function SettingsProvider({ children }) {
   const setDriveFolder = (v) => set({ driveFolder: v });
   const setLocationTagging = (v) => set({ locationTagging: v });
   const setRecordingRetentionDays = (v) => set({ recordingRetentionDays: v });
+  const setAiTranscription = (v) => {
+    if (v && !can(FEATURES.AI_TRANSCRIPTION)) { openPaywall(FEATURES.AI_TRANSCRIPTION); return; }
+    set({ aiTranscription: v });
+  };
+  const setAutoListen = (v) => set({ autoListen: v });
 
   const value = {
     ...s,
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
-    effSustainedDuration, effSpikeCooldown, effTempRetentionMinutes, effRecordingRetentionDays,
+    effSustainedDuration, effSpikeCooldown, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription,
     plan, isPro, can, setPlan, openPaywall, closePaywall, requirePro, paywallFeature,
     setRewind, setPostRoll, setExtendOnSecondTrigger, setTriggerCooldown, setPreventOverlaps,
     setVoiceArm, setPhrase, setCustomPhrases, setAutoCapture, setThreshold, setSustainedDuration,
     setSpikeCooldown, setMaxAuto, setTempRetentionMinutes, setQuality, setInputDeviceId,
     setArcEnabled, setLocalOnly, setDriveFolder, setLocationTagging, setRecordingRetentionDays,
+    setAiTranscription, setAutoListen,
   };
 
   return React.createElement(SettingsContext.Provider, { value }, children);

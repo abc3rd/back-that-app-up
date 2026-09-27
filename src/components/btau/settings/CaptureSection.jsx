@@ -11,6 +11,9 @@ export default function CaptureSection() {
   const s = useSettings();
   return (
     <SettingSection title="Capture" description="How the rolling buffer turns into a saved capture">
+      <SettingRow title="Auto-listen on launch" description="Start the always-on pre-roll buffer automatically when you open the app (dashcam mode)">
+        <Switch checked={s.autoListen} onCheckedChange={s.setAutoListen} />
+      </SettingRow>
       <div>
         <p className="text-sm">Pre-roll duration</p>
         <p className="mb-3 text-sm text-muted-foreground">Recent audio kept before a trigger</p>

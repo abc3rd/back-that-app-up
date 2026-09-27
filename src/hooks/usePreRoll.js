@@ -26,7 +26,7 @@ export default function usePreRoll() {
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
     effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown, effRecordingRetentionDays,
     threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
-    driveFolder, locationTagging,
+    driveFolder, locationTagging, effAiTranscription, autoListen,
   } = settings;
 
   const engineRef = useRef(null);
@@ -54,6 +54,21 @@ export default function usePreRoll() {
   useEffect(() => { listeningRef.current = listening; }, [listening]);
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
   useEffect(() => { silentRef.current = silentMode; }, [silentMode]);
+
+  const transcribeRecording = useCallback(async (rec) => {
+    try {
+      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file: rec.blob });
+      const res = await base44.functions.invoke('transcribeRecording', { audioUrl: file_url });
+      const transcript = (res.data && res.data.transcript) || '';
+      if (transcript) {
+        const updated = { ...rec, transcript, meta: { ...rec.meta, transcript } };
+        await saveRecording(updated);
+        setRecordings((prev) => prev.map((r) => (r.id === rec.id ? updated : r)));
+      }
+    } catch (e) {
+      // best-effort: transcription failure must not block the capture
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
@@ -125,12 +140,13 @@ export default function usePreRoll() {
       if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
       refresh();
       if (protectedCapture) backupToDrive(blob, rec.name, meta);
+      if (protectedCapture && effAiTranscription) transcribeRecording(rec);
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       toast({ variant: 'destructive', description: 'Failed to save capture' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, toast]);
+  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription, transcribeRecording, toast]);
 
   const stopRec = useCallback(() => {
     const r = recRef.current;
@@ -219,6 +235,10 @@ export default function usePreRoll() {
     if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
   };
   useEffect(() => { armRef.current = arm; }, [arm]);
+  useEffect(() => {
+    if (autoListen) armRef.current?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const disarm = () => {
     engineRef.current?.stop();
