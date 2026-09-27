@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
-import PreRollEngine from '@/lib/preroll/PreRollEngine';
+import PreRollEngine, { STANDARD_RATE, HIGH_RATE } from '@/lib/preroll/PreRollEngine';
 import {
   deleteRecording,
   listRecordings,
@@ -8,52 +8,52 @@ import {
   protectRecording,
   deleteAllTemporary,
   cleanupTemporary,
+  cleanupExpiredTemporary,
 } from '@/lib/preroll/storage';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
+import { useSettings } from './useSettings';
+import { FEATURES } from '@/lib/entitlements';
 
-const num = (key, fallback) => Number(localStorage.getItem(key)) || fallback;
-const PHRASE = 'back that app up';
+const rateFor = (q) => (q === 'high' ? HIGH_RATE : STANDARD_RATE);
 
 export default function usePreRoll() {
+  const settings = useSettings();
+  const {
+    effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
+    effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown,
+    threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
+  } = settings;
+
   const engineRef = useRef(null);
   const wakeRef = useRef(null);
   const recRef = useRef(null);
   const listeningRef = useRef(false);
-  const voiceArmRef = useRef(false);
+  const voiceArmRef = useRef(voiceArm);
   const armRef = useRef(null);
   const recWantedRef = useRef(false);
-  const autoCaptureRef = useRef(false);
-  const postRollRef = useRef(10);
-  const maxAutoRef = useRef(10);
   const silentRef = useRef(false);
 
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [db, setDb] = useState(0);
-  const [threshold, setThreshold] = useState(() => num('btau.threshold.v2', 55));
-  const [rewind, setRewind] = useState(() => num('btau.rewind.v3', 30));
-  const [postRoll, setPostRoll] = useState(() => num('btau.postroll.v1', 10));
-  const [autoCapture, setAutoCapture] = useState(() => localStorage.getItem('btau.autocap') === '1');
-  const [maxAuto, setMaxAuto] = useState(() => num('btau.maxauto.v1', 10));
   const [recordings, setRecordings] = useState([]);
   const [lastSavedId, setLastSavedId] = useState(null);
   const [error, setError] = useState(null);
   const [voiceHeard, setVoiceHeard] = useState(false);
   const [voiceSupported] = useState(() => typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
-  const [voiceArm, setVoiceArm] = useState(() => typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition));
   const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') === '1');
   const { toast } = useToast();
 
   useEffect(() => { listeningRef.current = listening; }, [listening]);
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
   useEffect(() => { silentRef.current = silentMode; }, [silentMode]);
-  useEffect(() => { autoCaptureRef.current = autoCapture; }, [autoCapture]);
-  useEffect(() => { postRollRef.current = postRoll; }, [postRoll]);
-  useEffect(() => { maxAutoRef.current = maxAuto; }, [maxAuto]);
 
-  const refresh = useCallback(async () => setRecordings(await listRecordings()), []);
+  const refresh = useCallback(async () => {
+    if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
+    setRecordings(await listRecordings());
+  }, [effTempRetentionMinutes]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
@@ -91,13 +91,12 @@ export default function usePreRoll() {
     await saveRecording(rec);
     setCapturing(false);
     setLastSavedId(rec.id);
-    if (!protectedCapture) {
-      await cleanupTemporary(maxAutoRef.current);
-    }
+    if (!protectedCapture) await cleanupTemporary(maxAuto);
+    if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
     refresh();
     if (protectedCapture) backupToDrive(blob, rec.name);
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
-  }, [refresh, backupToDrive]);
+  }, [refresh, backupToDrive, maxAuto, effTempRetentionMinutes]);
 
   const stopRec = useCallback(() => {
     const r = recRef.current;
@@ -113,16 +112,15 @@ export default function usePreRoll() {
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = 'en-US';
+    const phrases = [effPhrase, ...effCustomPhrases].map((p) => p.toLowerCase().trim()).filter(Boolean);
     rec.onresult = (e) => {
       const text = Array.from(e.results).map((r) => r[0].transcript).join(' ').toLowerCase();
-      if (!text.includes(PHRASE)) return;
+      if (!phrases.some((p) => text.includes(p))) return;
       setVoiceHeard(true);
       setTimeout(() => setVoiceHeard(false), 1500);
       if (listeningRef.current && engineRef.current) {
-        // Voice-triggered capture: pre-roll + post-roll. The mic buffer keeps running.
         engineRef.current.voiceCapture();
-        // Restart recognition to clear the transcript; the mic is NOT restarted.
-        stopRec();
+        stopRec(); // clear transcript; onend restarts recognition, not the mic
       } else {
         stopRec();
         armRef.current?.();
@@ -130,24 +128,23 @@ export default function usePreRoll() {
     };
     rec.onerror = (e) => {
       const err = e?.error || 'unknown';
-      if (err === 'no-speech' || err === 'aborted') return; // recoverable; onend restarts
+      if (err === 'no-speech' || err === 'aborted') return;
       if (err === 'not-allowed' || err === 'service-not-allowed') {
         recWantedRef.current = false;
         voiceArmRef.current = false;
-        setVoiceArm(false);
+        settings.setVoiceArm(false);
         toast({ variant: 'destructive', description: 'Voice recognition blocked. Check microphone permission.' });
         return;
       }
       toast({ description: `Voice recognition error: ${err}` });
     };
     rec.onend = () => {
-      // Restart recognition while it is wanted — independent of the rolling mic buffer.
       if (recWantedRef.current) {
         setTimeout(() => { try { rec.start(); recRef.current = rec; } catch {} }, 300);
       }
     };
     try { rec.start(); recRef.current = rec; } catch {}
-  }, [stopRec, toast]);
+  }, [stopRec, toast, effPhrase, effCustomPhrases, settings]);
 
   const arm = async () => {
     setError(null);
@@ -156,31 +153,34 @@ export default function usePreRoll() {
     const engine = new PreRollEngine({
       onLevel: setDb,
       onCapture: handleCapture,
-      onCaptureStart: (triggerType) => {
+      onCaptureStart: (t) => {
         setCapturing(true);
         if (!silentRef.current) {
-          const msg = triggerType === 'spike' ? 'Spike detected — saving the moment…'
-            : triggerType === 'voice' ? 'Voice phrase heard — saving…'
-            : 'Saving the moment…';
+          const msg = t === 'spike' ? 'Spike detected — saving the moment…' : t === 'voice' ? 'Voice phrase heard — saving…' : 'Saving the moment…';
           showStatus('Back That App Up! — Capturing', msg);
         }
       },
     });
+    engine.setSampleRate(rateFor(effQuality));
+    engine.setInputDeviceId(inputDeviceId);
+    engine.setPostRoll(effPostRoll);
+    engine.setAutoCapture(effAutoCapture);
+    engine.setExtendOnSecondTrigger(extendOnSecondTrigger);
+    engine.setTriggerCooldown(triggerCooldown * 1000);
+    engine.setSpikeCooldown(effSpikeCooldown * 1000);
+    engine.setSustainedDuration(effSustainedDuration);
     try {
-      await engine.start(rewind, threshold);
+      await engine.start(effRewind, threshold);
     } catch (err) {
       setError(err.name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your device settings to start listening.' : err.message);
       return;
     }
-    engine.setPostRoll(postRollRef.current);
-    engine.setAutoCapture(autoCaptureRef.current);
     engineRef.current = engine;
     setListening(true);
     if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
     if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
   };
-
   useEffect(() => { armRef.current = arm; }, [arm]);
 
   const disarm = () => {
@@ -194,47 +194,33 @@ export default function usePreRoll() {
   };
 
   const changeThreshold = (v) => {
-    setThreshold(v);
-    localStorage.setItem('btau.threshold.v2', v);
+    settings.setThreshold(v);
     if (engineRef.current) engineRef.current.threshold = v;
   };
-
   const changeRewind = (v) => {
-    setRewind(v);
-    localStorage.setItem('btau.rewind.v3', v);
-    engineRef.current?.setRewind(v);
+    settings.setRewind(v);
+    const applied = settings.can(FEATURES.EXTENDED_PRE_ROLL) ? v : Math.min(v, 30);
+    engineRef.current?.setRewind(applied);
   };
-
   const changePostRoll = (v) => {
-    setPostRoll(v);
-    localStorage.setItem('btau.postroll.v1', v);
-    engineRef.current?.setPostRoll(v);
+    settings.setPostRoll(v);
+    const applied = settings.can(FEATURES.EXTENDED_POST_ROLL) ? v : Math.min(v, 10);
+    engineRef.current?.setPostRoll(applied);
   };
-
   const toggleAutoCapture = () => {
-    setAutoCapture((prev) => {
-      const next = !prev;
-      autoCaptureRef.current = next;
-      localStorage.setItem('btau.autocap', next ? '1' : '0');
-      if (engineRef.current) engineRef.current.setAutoCapture(next);
-      return next;
-    });
+    const next = !effAutoCapture;
+    if (next && !settings.can(FEATURES.AUTO_CAPTURE)) { settings.openPaywall(FEATURES.AUTO_CAPTURE); return; }
+    settings.setAutoCapture(next);
+    engineRef.current?.setAutoCapture(next);
   };
-
-  const changeMaxAuto = (v) => {
-    setMaxAuto(v);
-    localStorage.setItem('btau.maxauto.v1', v);
-    maxAutoRef.current = v;
-  };
-
+  const changeMaxAuto = (v) => settings.setMaxAuto(v);
   const toggleVoiceArm = () => {
     const next = !voiceArm;
-    setVoiceArm(next);
+    settings.setVoiceArm(next);
     voiceArmRef.current = next;
     recWantedRef.current = next;
     if (next) startRec(); else stopRec();
   };
-
   const toggleSilent = () => {
     setSilentMode((prev) => {
       const next = !prev;
@@ -269,10 +255,11 @@ export default function usePreRoll() {
   };
 
   return {
-    listening, capturing, db, threshold, rewind, postRoll, autoCapture, maxAuto,
-    recordings, lastSavedId, error, voiceArm, voiceSupported, voiceHeard, silentMode,
-    refresh, arm, disarm, changeThreshold, changeRewind, changePostRoll,
-    toggleAutoCapture, changeMaxAuto, backThatAppUp, remove, rename, protect,
-    deleteAllTemp, toggleVoiceArm, toggleSilent, dismissError: () => setError(null),
+    listening, capturing, db,
+    threshold, rewind: effRewind, postRoll: effPostRoll, autoCapture: effAutoCapture, maxAuto, voiceArm, voiceSupported, voiceHeard, silentMode,
+    recordings, lastSavedId, error,
+    refresh, arm, disarm,
+    changeThreshold, changeRewind, changePostRoll, toggleAutoCapture, changeMaxAuto, toggleVoiceArm, toggleSilent,
+    backThatAppUp, remove, rename, protect, deleteAllTemp, dismissError: () => setError(null),
   };
 }

@@ -1,17 +1,18 @@
 import { encodeWav } from './wav';
 
-export const SAMPLE_RATE = 16000;
+export const STANDARD_RATE = 16000;
+export const HIGH_RATE = 44100;
 
-// Paper dB scale: 20*log10(rms) over signed 16-bit samples. 0 dB = silence, ~90.3 dB = full scale.
-//
 // Architecture:
 // - The microphone runs continuously while armed. `ring` is an in-memory circular
 //   buffer that overwrites itself as new audio arrives. Advancing the buffer never
-//   creates a recording.
+//   creates a recording — the rolling buffer is temporary memory, not a library.
 // - A Saved Capture is produced ONLY by an explicit trigger (button, voice phrase,
 //   or an auto spike when Auto Capture on Sound is enabled). `capture()` snapshots
 //   the current pre-roll, then accumulates `postRollSeconds` of post-roll from the
 //   SAME running mic stream — no second recorder is created.
+// - Quality (sample rate) and input device are applied at start (arm) time.
+// - Cooldowns prevent overlapping captures; sustained-duration gates spikes.
 export default class PreRollEngine {
   constructor({ onLevel, onCapture, onCaptureStart }) {
     Object.assign(this, { onLevel, onCapture, onCaptureStart });
@@ -19,14 +20,20 @@ export default class PreRollEngine {
     this.lastDb = 0;
     this.autoCapture = false;
     this.postRollSeconds = 10;
-    this.cooldownMs = 2000;
+    this.triggerCooldownMs = 2000;
+    this.spikeCooldownMs = 2000;
+    this.sustainedDurationMs = 0;
+    this.sustainedSince = 0;
+    this.extendOnSecondTrigger = false;
     this.lastCaptureAt = 0;
+    this.sampleRate = STANDARD_RATE;
+    this.inputDeviceId = '';
   }
 
   async start(rewindSeconds, threshold) {
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-    });
+    const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+    if (this.inputDeviceId) audio.deviceId = { exact: this.inputDeviceId };
+    this.stream = await navigator.mediaDevices.getUserMedia({ audio });
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     await this.ctx.resume();
     this.source = this.ctx.createMediaStreamSource(this.stream);
@@ -52,16 +59,21 @@ export default class PreRollEngine {
   }
 
   setRewind(seconds) {
-    this.ring = new Int16Array(seconds * SAMPLE_RATE);
+    this.ring = new Int16Array(seconds * this.sampleRate);
     this.w = 0;
     this.filled = false;
   }
-
-  setPostRoll(seconds) { this.postRollSeconds = seconds; }
+  setPostRoll(s) { this.postRollSeconds = s; }
   setAutoCapture(on) { this.autoCapture = !!on; }
+  setSampleRate(sr) { this.sampleRate = sr; }
+  setInputDeviceId(id) { this.inputDeviceId = id; }
+  setExtendOnSecondTrigger(v) { this.extendOnSecondTrigger = !!v; }
+  setTriggerCooldown(ms) { this.triggerCooldownMs = ms; }
+  setSpikeCooldown(ms) { this.spikeCooldownMs = ms; }
+  setSustainedDuration(ms) { this.sustainedDurationMs = ms; this.sustainedSince = 0; }
 
   process(input) {
-    const ratio = this.ctx.sampleRate / SAMPLE_RATE;
+    const ratio = this.ctx.sampleRate / this.sampleRate;
     const out = new Int16Array(Math.ceil((input.length - this.pos) / ratio));
     let n = 0;
     let sum = 0;
@@ -78,38 +90,52 @@ export default class PreRollEngine {
     this.write(samples);
 
     if (this.post) {
-      // A capture is in progress: accumulate post-roll from the running stream.
       this.post.chunks.push(samples.slice());
       this.post.count += n;
       this.post.peak = Math.max(this.post.peak, db);
-      if (this.post.count >= this.post.seconds * SAMPLE_RATE) this.finishPost();
-    } else if (this.autoCapture && db >= this.threshold && this.offCooldown()) {
-      // Auto spike capture — only when enabled and off cooldown.
-      this.capture('spike');
+      if (this.post.count >= this.post.seconds * this.sampleRate) this.finishPost();
+    } else if (this.autoCapture && db >= this.threshold) {
+      if (this.sustainedDurationMs > 0) {
+        if (!this.sustainedSince) this.sustainedSince = Date.now();
+        if (Date.now() - this.sustainedSince >= this.sustainedDurationMs && this.offSpikeCooldown()) this.capture('spike');
+      } else if (this.offSpikeCooldown()) {
+        this.capture('spike');
+      }
+    } else {
+      this.sustainedSince = 0;
     }
     this.onLevel(db);
   }
 
-  offCooldown() {
-    return Date.now() - this.lastCaptureAt >= this.cooldownMs + this.postRollSeconds * 1000;
+  offSpikeCooldown() {
+    return Date.now() - this.lastCaptureAt >= this.spikeCooldownMs + this.postRollSeconds * 1000;
   }
 
-  // Begin a Saved Capture: snapshot the pre-roll, then collect post-roll.
-  // The rolling mic buffer keeps running; no second recorder is created.
-  capture(triggerType) {
-    if (!this.ctx || this.post) return;
+  capture(type) {
+    if (!this.ctx) return;
+    if (this.post) {
+      // A capture is already running. Optionally extend it on a second non-spike trigger.
+      if (type !== 'spike' && this.extendOnSecondTrigger) {
+        this.post.seconds += this.postRollSeconds;
+        this.lastCaptureAt = Date.now();
+      }
+      return;
+    }
+    if (type === 'voice' && Date.now() - this.lastCaptureAt < this.triggerCooldownMs) return;
+    if (type === 'spike' && !this.offSpikeCooldown()) return;
     this.lastCaptureAt = Date.now();
+    this.sustainedSince = 0;
     const triggerTimestamp = Date.now();
     this.post = {
       pre: this.snapshot(),
-      triggerType,
+      triggerType: type,
       triggerTimestamp,
       chunks: [],
       count: 0,
       peak: this.lastDb,
       seconds: this.postRollSeconds,
     };
-    this.onCaptureStart?.(triggerType);
+    this.onCaptureStart?.(type);
   }
 
   write(samples) {
@@ -140,18 +166,16 @@ export default class PreRollEngine {
     this.emit(all, triggerType, peak, triggerTimestamp, pre.length);
   }
 
-  // Manual button trigger → pre-roll + post-roll capture.
   saveNow() { this.capture('button'); }
-  // Voice phrase trigger → pre-roll + post-roll capture.
   voiceCapture() { this.capture('voice'); }
 
   emit(samples, triggerType, peakDb, triggerTimestamp, preRollSamples) {
     if (!samples.length) return;
-    const blob = encodeWav(samples, SAMPLE_RATE);
-    const triggerOffsetMs = Math.round((preRollSamples / SAMPLE_RATE) * 1000);
+    const blob = encodeWav(samples, this.sampleRate);
+    const triggerOffsetMs = Math.round((preRollSamples / this.sampleRate) * 1000);
     this.onCapture({
       blob,
-      durationMs: (samples.length / SAMPLE_RATE) * 1000,
+      durationMs: (samples.length / this.sampleRate) * 1000,
       peakDb,
       triggerType,
       triggerTimestamp,

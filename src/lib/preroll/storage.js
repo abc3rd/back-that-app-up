@@ -55,3 +55,29 @@ export const cleanupTemporary = async (max) => {
   await run('readwrite', (s) => { toDelete.forEach((t) => s.delete(t.id)); });
   return toDelete.length;
 };
+
+// Delete unprotected temporary captures older than `retentionMinutes`.
+export const cleanupExpiredTemporary = async (retentionMinutes) => {
+  if (!retentionMinutes || retentionMinutes <= 0) return 0;
+  const all = await run('readonly', (s) => s.getAll());
+  const cutoff = Date.now() - retentionMinutes * 60 * 1000;
+  const expired = all.filter((r) => r.temporary && !r.protected && r.timestamp < cutoff);
+  if (!expired.length) return 0;
+  await run('readwrite', (s) => { expired.forEach((r) => s.delete(r.id)); });
+  return expired.length;
+};
+
+// Delete every recording (protected and temporary).
+export const deleteAllRecordings = async () => {
+  const all = await run('readonly', (s) => s.getAll());
+  if (!all.length) return 0;
+  await run('readwrite', (s) => { all.forEach((r) => s.delete(r.id)); });
+  return all.length;
+};
+
+export const getStorageEstimate = async () => {
+  if (navigator.storage?.estimate) {
+    try { return await navigator.storage.estimate(); } catch { return null; }
+  }
+  return null;
+};
