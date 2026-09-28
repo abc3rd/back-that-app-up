@@ -20,18 +20,6 @@ import { FEATURES } from '@/lib/entitlements';
 
 const rateFor = (q) => (q === 'high' ? HIGH_RATE : STANDARD_RATE);
 
-// Stealth confirmation: a single quiet spoken cue instead of notifications/vibration.
-function playBackupCue() {
-  try {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    const u = new SpeechSynthesisUtterance('backup');
-    u.volume = 0.4;
-    u.rate = 1.2;
-    synth.speak(u);
-  } catch {}
-}
-
 export default function usePreRoll() {
   const settings = useSettings();
   const {
@@ -146,7 +134,6 @@ export default function usePreRoll() {
       if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
       refresh();
       if (protectedCapture) saveMoment(rec);
-      if (silentRef.current) playBackupCue();
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       toast({ variant: 'destructive', description: 'Failed to save capture' });
