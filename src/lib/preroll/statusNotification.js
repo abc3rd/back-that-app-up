@@ -17,11 +17,11 @@ export async function ensurePermission() {
   }
 }
 
-export function showStatus(title, body) {
+export function showStatus(title, body, soundOn = false) {
   if (!notificationsSupported() || Notification.permission !== 'granted') return;
   try {
     current?.close?.();
-    current = new Notification(title, { body, tag: TAG, requireInteraction: true, silent: true });
+    current = new Notification(title, { body, tag: TAG, requireInteraction: true, silent: !soundOn });
     current.onclose = () => { current = null; };
   } catch {
     current = null;

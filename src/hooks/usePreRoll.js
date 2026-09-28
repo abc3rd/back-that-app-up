@@ -37,7 +37,9 @@ export default function usePreRoll() {
   const voiceArmRef = useRef(voiceArm);
   const armRef = useRef(null);
   const recWantedRef = useRef(false);
-  const silentRef = useRef(false);
+  const silentRef = useRef(!settings.notifications);
+  const soundRef = useRef(settings.sound);
+  const vibrationRef = useRef(settings.vibration);
   const locRef = useRef(null);
   const lastHeardRef = useRef('');
 
@@ -56,12 +58,13 @@ export default function usePreRoll() {
     if (/iPhone|iPad|iPod/.test(ua) && !window.MSStream) return false; // iOS Safari/PWA does not support web speech recognition
     return true;
   });
-  const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') !== '0');
   const { toast } = useToast();
 
   useEffect(() => { listeningRef.current = listening; }, [listening]);
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
-  useEffect(() => { silentRef.current = silentMode; }, [silentMode]);
+  useEffect(() => { silentRef.current = !settings.notifications; }, [settings.notifications]);
+  useEffect(() => { soundRef.current = settings.sound; }, [settings.sound]);
+  useEffect(() => { vibrationRef.current = settings.vibration; }, [settings.vibration]);
 
   const saveMoment = useCallback(async (rec) => {
     try {
@@ -138,7 +141,7 @@ export default function usePreRoll() {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       toast({ variant: 'destructive', description: 'Failed to save capture' });
     }
-    if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.');
+    if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current);
   }, [refresh, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, saveMoment, toast]);
 
   const stopRec = useCallback(() => {
@@ -209,9 +212,10 @@ export default function usePreRoll() {
       onCapture: handleCapture,
       onCaptureStart: (t) => {
         setCapturing(true);
+        if (vibrationRef.current) navigator.vibrate?.(60);
         if (!silentRef.current) {
           const msg = t === 'spike' ? 'Spike detected — saving the moment…' : t === 'voice' ? 'Voice phrase heard — saving…' : 'Saving the moment…';
-          showStatus('Back That App Up! — Capturing', msg);
+          showStatus('Back That App Up! — Capturing', msg, soundRef.current);
         }
       },
     });
@@ -232,7 +236,7 @@ export default function usePreRoll() {
     engineRef.current = engine;
     setListening(true);
     base44.analytics.track({ eventName: 'detector_armed' });
-    if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
+    if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current));
     navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
     if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
   };
@@ -287,14 +291,11 @@ export default function usePreRoll() {
     // recognition lifecycle is driven by the voiceArm effect below
   };
   const toggleSilent = () => {
-    setSilentMode((prev) => {
-      const next = !prev;
-      silentRef.current = next;
-      localStorage.setItem('btau.silent', next ? '1' : '0');
-      if (next) hideStatus();
-      else if (listeningRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.'));
-      return next;
-    });
+    const enabled = !settings.notifications;
+    settings.setNotifications(enabled);
+    silentRef.current = !enabled;
+    if (!enabled) hideStatus();
+    else if (listeningRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current));
   };
 
   const backThatAppUp = () => engineRef.current?.saveNow();
@@ -337,7 +338,7 @@ export default function usePreRoll() {
 
   return {
     listening, capturing, db,
-    threshold, rewind: effRewind, postRoll: effPostRoll, autoCapture: effAutoCapture, maxAuto, voiceArm, voiceSupported, voiceHeard, silentMode,
+    threshold, rewind: effRewind, postRoll: effPostRoll, autoCapture: effAutoCapture, maxAuto, voiceArm, voiceSupported, voiceHeard, silentMode: !settings.notifications,
     recordings, lastSavedId, error,
     refresh, arm, disarm,
     changeThreshold, changeRewind, changePostRoll, toggleAutoCapture, changeMaxAuto, toggleVoiceArm, toggleSilent,

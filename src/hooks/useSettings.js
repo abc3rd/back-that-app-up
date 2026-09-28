@@ -30,6 +30,9 @@ const DEFAULTS = {
   recordingRetentionDays: 30,
   aiTranscription: false,
   autoListen: false,
+  sound: false,
+  vibration: false,
+  notifications: false,
 };
 
 const load = () => {
@@ -141,6 +144,9 @@ export function SettingsProvider({ children }) {
     set({ aiTranscription: v });
   };
   const setAutoListen = (v) => set({ autoListen: v });
+  const setSound = (v) => set({ sound: v });
+  const setVibration = (v) => set({ vibration: v });
+  const setNotifications = (v) => set({ notifications: v });
 
   const value = {
     ...s,
@@ -151,7 +157,7 @@ export function SettingsProvider({ children }) {
     setVoiceArm, setPhrase, setCustomPhrases, setAutoCapture, setThreshold, setSustainedDuration,
     setSpikeCooldown, setMaxAuto, setTempRetentionMinutes, setQuality, setInputDeviceId,
     setArcEnabled, setLocalOnly, setDriveFolder, setLocationTagging, setRecordingRetentionDays,
-    setAiTranscription, setAutoListen,
+    setAiTranscription, setAutoListen, setSound, setVibration, setNotifications,
   };
 
   return React.createElement(SettingsContext.Provider, { value }, children);
