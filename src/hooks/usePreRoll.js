@@ -8,8 +8,8 @@ import {
   protectRecording,
   deleteAllTemporary,
   cleanupTemporary,
-  cleanupExpiredTemporary,
-  cleanupExpiredRecordings,
+  cleanupTemporaryByAge,
+  cleanupByStorageLimit,
 } from '@/lib/preroll/storage';
 import { captureLocation, reverseGeocode, buildMetadata } from '@/lib/preroll/metadata';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
@@ -24,7 +24,7 @@ export default function usePreRoll() {
   const settings = useSettings();
   const {
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
-    effSustainedDuration, effTempRetentionMinutes, effSpikeCooldown, effRecordingRetentionDays,
+    effSustainedDuration, effTempRetentionHours, effSpikeCooldown, effMaxStorageBytes,
     threshold, triggerCooldown, extendOnSecondTrigger, inputDeviceId, maxAuto, voiceArm,
     locationTagging, effAiTranscription, effAutoListen,
   } = settings;
@@ -87,10 +87,10 @@ export default function usePreRoll() {
   }, []);
 
   const refresh = useCallback(async () => {
-    if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
-    if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
+    if (effTempRetentionHours > 0) await cleanupTemporaryByAge(effTempRetentionHours);
+    if (effMaxStorageBytes > 0) await cleanupByStorageLimit(effMaxStorageBytes);
     setRecordings(await listRecordings());
-  }, [effTempRetentionMinutes, effRecordingRetentionDays]);
+  }, [effTempRetentionHours, effMaxStorageBytes]);
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
@@ -133,16 +133,20 @@ export default function usePreRoll() {
       await saveRecording(rec);
       base44.analytics.track({ eventName: 'recording_saved' });
       if (!protectedCapture) await cleanupTemporary(maxAuto);
-      if (effTempRetentionMinutes > 0) await cleanupExpiredTemporary(effTempRetentionMinutes);
-      if (effRecordingRetentionDays > 0) await cleanupExpiredRecordings(effRecordingRetentionDays);
+      if (effTempRetentionHours > 0) await cleanupTemporaryByAge(effTempRetentionHours);
+      if (effMaxStorageBytes > 0) await cleanupByStorageLimit(effMaxStorageBytes);
       refresh();
       if (protectedCapture) saveMoment(rec);
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
-      toast({ variant: 'destructive', description: 'Failed to save capture' });
+      const full = e?.name === 'QuotaExceededError' || /quota|storage/i.test(e?.message || '');
+      setError(full
+        ? 'Device storage is full, so the capture was not saved. Delete temporary captures or lower the storage limit in Settings, then try again.'
+        : `Couldn't save the capture: ${e?.message || 'unknown error'}. Try again.`);
+      toast({ variant: 'destructive', description: 'Capture failed — see the message at the top of the screen' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current);
-  }, [refresh, maxAuto, effTempRetentionMinutes, effRecordingRetentionDays, saveMoment, toast]);
+  }, [refresh, maxAuto, effTempRetentionHours, effMaxStorageBytes, saveMoment, toast]);
 
   const stopRec = useCallback(() => {
     recGenRef.current++; // invalidate any pending restart from a stale instance
@@ -230,7 +234,16 @@ export default function usePreRoll() {
     try {
       await engine.start(effRewind, threshold);
     } catch (err) {
-      setError(err.name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your device settings to start listening.' : err.message);
+      const name = err?.name || '';
+      const denied = name === 'NotAllowedError' || name === 'SecurityError';
+      const inUse = name === 'NotReadableError' || name === 'TrackStartError' || name === 'AbortError';
+      setError(
+        denied
+          ? 'Microphone access is blocked. Open your device settings, allow microphone access for this app, then tap Arm again.'
+          : inUse
+          ? 'The microphone is in use by another app. Close the other app, then tap Arm again.'
+          : `Couldn't start listening: ${err?.message || 'unknown error'}. Tap Arm to try again.`
+      );
       return;
     }
     engineRef.current = engine;

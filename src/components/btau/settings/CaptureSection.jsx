@@ -14,16 +14,8 @@ export default function CaptureSection() {
       <SettingRow title={s.isPro ? 'Always-on listening (Pro)' : 'Auto-listen on launch'} description={s.isPro ? 'Pro tier keeps the pre-roll buffer armed whenever the app is open' : 'Start the always-on pre-roll buffer automatically when you open the app (dashcam mode)'}>
         <Switch checked={s.effAutoListen} onCheckedChange={s.setAutoListen} disabled={s.isPro} />
       </SettingRow>
-      <div>
-        <p className="text-sm">Pre-roll duration</p>
-        <p className="mb-3 text-sm text-muted-foreground">Recent audio kept before a trigger</p>
-        <RewindPicker value={s.effRewind} onChange={s.setRewind} />
-      </div>
-      <div>
-        <p className="text-sm">Post-roll duration</p>
-        <p className="mb-3 text-sm text-muted-foreground">Audio kept after a trigger</p>
-        <PostRollPicker value={s.effPostRoll} onChange={s.setPostRoll} />
-      </div>
+      <RewindPicker value={s.effRewind} onChange={s.setRewind} />
+      <PostRollPicker value={s.effPostRoll} onChange={s.setPostRoll} />
       <SettingRow title="Extend on second trigger" description="A second trigger during post-roll extends the capture">
         <Switch checked={s.extendOnSecondTrigger} onCheckedChange={s.setExtendOnSecondTrigger} />
       </SettingRow>

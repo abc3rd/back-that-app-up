@@ -34,13 +34,15 @@ export default function Home() {
   const rewindLabel = REWIND_OPTIONS.find((o) => o.value === p.rewind)?.label ?? `${p.rewind} s`;
   const { toast } = useToast();
   useQuickBackup({ listening: p.listening, onSave: p.backThatAppUp, toast });
+  const statusLabel = p.error ? 'Needs attention' : p.capturing ? 'Capturing' : p.listening ? 'Active' : 'Paused';
+  const statusTone = p.error ? 'error' : p.listening ? 'active' : 'idle';
 
   return (
     <>
     <PullToRefresh containerRef={scrollRef} onRefresh={p.refresh}>
       <div className="min-h-screen bg-background text-foreground">
         <main className="mx-auto flex max-w-md flex-col gap-12 px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
-          <Header listening={p.listening} capturing={p.capturing} />
+          <Header status={statusLabel} tone={statusTone} micActive={p.listening} />
           {p.error && (
             <div className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
               <p className="flex-1">{p.error}</p>
@@ -54,6 +56,9 @@ export default function Home() {
             <LevelMeter db={p.db} threshold={p.threshold} active={p.listening} />
           </section>
           <SaveButton listening={p.listening} capturing={p.capturing} rewindLabel={rewindLabel} onSave={p.backThatAppUp} />
+          {p.capturing && (
+            <p className="text-center text-sm text-primary">Saving the last {rewindLabel}…</p>
+          )}
           <section className="flex flex-col gap-8 rounded-3xl border-gradient-neon p-6 glow-neon-soft">
             <VoiceTrigger enabled={p.voiceArm} supported={p.voiceSupported} heard={p.voiceHeard} onToggle={p.toggleVoiceArm} />
             <div className="h-px bg-border" />

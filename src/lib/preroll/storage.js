@@ -56,26 +56,35 @@ export const cleanupTemporary = async (max) => {
   return toDelete.length;
 };
 
-// Delete unprotected temporary captures older than `retentionMinutes`.
-export const cleanupExpiredTemporary = async (retentionMinutes) => {
-  if (!retentionMinutes || retentionMinutes <= 0) return 0;
+// Delete unprotected temporary captures older than `retentionHours`.
+// Saved/protected recordings are never touched by automatic retention cleanup.
+export const cleanupTemporaryByAge = async (retentionHours) => {
+  if (!retentionHours || retentionHours <= 0) return 0;
   const all = await run('readonly', (s) => s.getAll());
-  const cutoff = Date.now() - retentionMinutes * 60 * 1000;
+  const cutoff = Date.now() - retentionHours * 60 * 60 * 1000;
   const expired = all.filter((r) => r.temporary && !r.protected && r.timestamp < cutoff);
   if (!expired.length) return 0;
   await run('readwrite', (s) => { expired.forEach((r) => s.delete(r.id)); });
   return expired.length;
 };
 
-// Delete every recording (protected and temporary) older than `retentionDays`.
-export const cleanupExpiredRecordings = async (retentionDays) => {
-  if (!retentionDays || retentionDays <= 0) return 0;
+// Keep temporary audio under `maxBytes` by deleting the oldest unprotected
+// captures first. Saved/protected recordings are never touched.
+export const cleanupByStorageLimit = async (maxBytes) => {
+  if (!maxBytes || maxBytes <= 0) return 0;
   const all = await run('readonly', (s) => s.getAll());
-  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
-  const expired = all.filter((r) => r.timestamp < cutoff);
-  if (!expired.length) return 0;
-  await run('readwrite', (s) => { expired.forEach((r) => s.delete(r.id)); });
-  return expired.length;
+  const sizeOf = (r) => r.sizeBytes || r.blob?.size || 0;
+  const temps = all.filter((r) => r.temporary && !r.protected).sort((a, b) => a.timestamp - b.timestamp);
+  let total = temps.reduce((n, r) => n + sizeOf(r), 0);
+  const toDelete = [];
+  for (const r of temps) {
+    if (total <= maxBytes) break;
+    toDelete.push(r);
+    total -= sizeOf(r);
+  }
+  if (!toDelete.length) return 0;
+  await run('readwrite', (s) => { toDelete.forEach((r) => s.delete(r.id)); });
+  return toDelete.length;
 };
 
 // Delete every recording (protected and temporary).

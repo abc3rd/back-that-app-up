@@ -1,8 +1,12 @@
 import React from 'react';
 
-export default function Header({ listening, capturing }) {
-  const label = capturing ? 'Capturing' : listening ? 'Listening' : 'Idle';
-  const dot = capturing ? 'bg-primary animate-pulse' : listening ? 'bg-primary' : 'bg-muted-foreground/50';
+const TONE = {
+  active: 'bg-primary',
+  error: 'bg-destructive',
+  idle: 'bg-muted-foreground/50',
+};
+
+export default function Header({ status = 'Paused', tone = 'idle', micActive = false }) {
   return (
     <header className="flex items-start justify-between gap-4">
       <div>
@@ -12,10 +16,17 @@ export default function Header({ listening, capturing }) {
           <span className="text-foreground">Back That</span>{' '}<span className="text-gradient-neon">App Up!</span>
         </h1>
       </div>
-      <span className="mt-1 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-muted-foreground">
-        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        {label}
-      </span>
+      <div className="mt-1 flex flex-col items-end gap-2">
+        <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-muted-foreground">
+          <span className={`h-1.5 w-1.5 rounded-full ${TONE[tone] || TONE.idle} ${tone === 'active' ? 'animate-pulse' : ''}`} />
+          {status}
+        </span>
+        {micActive && (
+          <span className="inline-flex items-center gap-1.5 text-xs text-primary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Mic active
+          </span>
+        )}
+      </div>
     </header>
   );
 }

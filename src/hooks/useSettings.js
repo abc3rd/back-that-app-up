@@ -20,14 +20,14 @@ const DEFAULTS = {
   sustainedDuration: 0,
   spikeCooldown: 2,
   maxAuto: 10,
-  tempRetentionMinutes: 0,
+  tempRetentionHours: 24,
+  maxStorageMB: 0,
   quality: 'standard',
   inputDeviceId: '',
   arcEnabled: false,
   localOnly: true,
   driveFolder: 'Back That App Up!',
   locationTagging: true,
-  recordingRetentionDays: 30,
   aiTranscription: false,
   autoListen: false,
   sound: false,
@@ -82,8 +82,8 @@ export function SettingsProvider({ children }) {
   const effCustomPhrases = can(FEATURES.MULTIPLE_PHRASES) ? s.customPhrases : [];
   const effSustainedDuration = can(FEATURES.SUSTAINED_DURATION) ? s.sustainedDuration : 0;
   const effSpikeCooldown = can(FEATURES.SPIKE_COOLDOWN) ? s.spikeCooldown : 2;
-  const effTempRetentionMinutes = can(FEATURES.TEMP_RETENTION_DURATION) ? s.tempRetentionMinutes : 0;
-  const effRecordingRetentionDays = s.recordingRetentionDays;
+  const effTempRetentionHours = can(FEATURES.TEMP_RETENTION_DURATION) ? s.tempRetentionHours : Math.min(s.tempRetentionHours, 24);
+  const effMaxStorageBytes = (can(FEATURES.TEMP_RETENTION_DURATION) ? s.maxStorageMB : Math.min(s.maxStorageMB, 250)) * 1024 * 1024;
   const effAiTranscription = can(FEATURES.AI_TRANSCRIPTION) ? s.aiTranscription : false;
   const effAutoListen = isPro || s.autoListen;
 
@@ -122,9 +122,9 @@ export function SettingsProvider({ children }) {
     set({ spikeCooldown: v });
   };
   const setMaxAuto = (v) => set({ maxAuto: v });
-  const setTempRetentionMinutes = (v) => {
-    if (v > 0 && !can(FEATURES.TEMP_RETENTION_DURATION)) { openPaywall(FEATURES.TEMP_RETENTION_DURATION); return; }
-    set({ tempRetentionMinutes: v });
+  const setTempRetentionHours = (v) => {
+    if (v > 24 && !can(FEATURES.TEMP_RETENTION_DURATION)) { openPaywall(FEATURES.TEMP_RETENTION_DURATION); return; }
+    set({ tempRetentionHours: v });
   };
   const setQuality = (v) => {
     if (v === 'high' && !can(FEATURES.HIGH_QUALITY)) { openPaywall(FEATURES.HIGH_QUALITY); return; }
@@ -138,7 +138,10 @@ export function SettingsProvider({ children }) {
   const setLocalOnly = (v) => set({ localOnly: v });
   const setDriveFolder = (v) => set({ driveFolder: v });
   const setLocationTagging = (v) => set({ locationTagging: v });
-  const setRecordingRetentionDays = (v) => set({ recordingRetentionDays: v });
+  const setMaxStorageMB = (v) => {
+    if (v > 250 && !can(FEATURES.TEMP_RETENTION_DURATION)) { openPaywall(FEATURES.TEMP_RETENTION_DURATION); return; }
+    set({ maxStorageMB: v });
+  };
   const setAiTranscription = (v) => {
     if (v && !can(FEATURES.AI_TRANSCRIPTION)) { openPaywall(FEATURES.AI_TRANSCRIPTION); return; }
     set({ aiTranscription: v });
@@ -151,12 +154,12 @@ export function SettingsProvider({ children }) {
   const value = {
     ...s,
     effRewind, effPostRoll, effAutoCapture, effQuality, effPhrase, effCustomPhrases,
-    effSustainedDuration, effSpikeCooldown, effTempRetentionMinutes, effRecordingRetentionDays, effAiTranscription, effAutoListen,
+    effSustainedDuration, effSpikeCooldown, effTempRetentionHours, effMaxStorageBytes, effAiTranscription, effAutoListen,
     plan, isPro, can, setPlan, openPaywall, closePaywall, requirePro, paywallFeature,
     setRewind, setPostRoll, setExtendOnSecondTrigger, setTriggerCooldown, setPreventOverlaps,
     setVoiceArm, setPhrase, setCustomPhrases, setAutoCapture, setThreshold, setSustainedDuration,
-    setSpikeCooldown, setMaxAuto, setTempRetentionMinutes, setQuality, setInputDeviceId,
-    setArcEnabled, setLocalOnly, setDriveFolder, setLocationTagging, setRecordingRetentionDays,
+    setSpikeCooldown, setMaxAuto, setTempRetentionHours, setMaxStorageMB, setQuality, setInputDeviceId,
+    setArcEnabled, setLocalOnly, setDriveFolder, setLocationTagging,
     setAiTranscription, setAutoListen, setSound, setVibration, setNotifications,
   };
 
