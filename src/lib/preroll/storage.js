@@ -92,3 +92,19 @@ export const getStorageEstimate = async () => {
   }
   return null;
 };
+
+// Sum the on-device bytes of every stored recording, split by saved vs temporary.
+export const getRecordingsStats = async () => {
+  const all = await run('readonly', (s) => s.getAll());
+  let savedCount = 0, savedBytes = 0, tempCount = 0, tempBytes = 0;
+  for (const r of all) {
+    const bytes = r.sizeBytes || r.blob?.size || 0;
+    if (r.temporary && !r.protected) { tempCount++; tempBytes += bytes; }
+    else { savedCount++; savedBytes += bytes; }
+  }
+  return {
+    count: all.length,
+    totalBytes: savedBytes + tempBytes,
+    savedCount, savedBytes, tempCount, tempBytes,
+  };
+};

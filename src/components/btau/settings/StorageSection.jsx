@@ -12,6 +12,7 @@ import SettingRow from './SettingRow';
 import { useSettings } from '@/hooks/useSettings';
 import { FEATURES } from '@/lib/entitlements';
 import { deleteAllTemporary, deleteAllRecordings, getStorageEstimate } from '@/lib/preroll/storage';
+import StorageDashboard from '@/components/btau/StorageDashboard';
 
 const fmt = (b) => (b ? `${(b / 1024 / 1024).toFixed(1)} MB` : '—');
 
@@ -37,6 +38,7 @@ export default function StorageSection() {
 
   return (
     <SettingSection title="Storage" description="Local retention and cleanup">
+      <StorageDashboard />
       <SettingRow title="Location tagging" description="Tag captures with GPS location for AI moment search">
         <Switch checked={s.locationTagging} onCheckedChange={s.setLocationTagging} />
       </SettingRow>

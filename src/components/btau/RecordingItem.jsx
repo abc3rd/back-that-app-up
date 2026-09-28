@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
-import { Download, Pause, Pencil, Play, Shield, Trash2 } from 'lucide-react';
+import { CheckSquare, Download, Pause, Pencil, Play, Shield, Square, Trash2 } from 'lucide-react';
 import PlaybackSpeedControl from '@/components/btau/PlaybackSpeedControl';
 
 const TRIGGER_LABEL = { voice: 'voice', button: 'manual', spike: 'spike' };
 
-export default function RecordingItem({ rec, fresh, highlight, onDelete, onRename, onProtect }) {
+export default function RecordingItem({ rec, fresh, highlight, onDelete, onRename, onProtect, selectMode, selected, onToggleSelect }) {
   const audioRef = useRef(null);
   const rootRef = useRef(null);
   const [url, setUrl] = useState();
@@ -47,6 +47,11 @@ export default function RecordingItem({ rec, fresh, highlight, onDelete, onRenam
           onEnded={() => setPlaying(false)}
           onTimeUpdate={(e) => { const a = e.currentTarget; if (a.duration) setProgress(a.currentTime / a.duration); }}
         />
+        {selectMode && (
+          <button aria-label={selected ? 'Deselect' : 'Select'} onClick={() => onToggleSelect?.(rec.id)} className="flex h-11 w-11 shrink-0 select-none items-center justify-center">
+            {selected ? <CheckSquare className="h-7 w-7 text-primary" /> : <Square className="h-7 w-7 text-muted-foreground" />}
+          </button>
+        )}
         <button aria-label={playing ? 'Pause' : 'Play'} onClick={toggle} className="flex h-11 w-11 shrink-0 select-none items-center justify-center rounded-full bg-foreground text-background">
           {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
         </button>
