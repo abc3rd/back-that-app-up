@@ -56,7 +56,7 @@ export default function usePreRoll() {
     if (/iPhone|iPad|iPod/.test(ua) && !window.MSStream) return false; // iOS Safari/PWA does not support web speech recognition
     return true;
   });
-  const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') === '1');
+  const [silentMode, setSilentMode] = useState(() => localStorage.getItem('btau.silent') !== '0');
   const { toast } = useToast();
 
   useEffect(() => { listeningRef.current = listening; }, [listening]);
