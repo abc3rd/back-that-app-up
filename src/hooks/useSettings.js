@@ -27,7 +27,7 @@ const DEFAULTS = {
   localOnly: true,
   driveFolder: 'Back That App Up!',
   locationTagging: true,
-  recordingRetentionDays: 0,
+  recordingRetentionDays: 30,
   aiTranscription: false,
   autoListen: false,
 };
