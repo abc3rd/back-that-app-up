@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
+import { Smartphone, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import SettingSection from './SettingSection';
 import SettingRow from './SettingRow';
 import { useToast } from '@/components/ui/use-toast';
 import { useSettings } from '@/hooks/useSettings';
 import { base44 } from '@/api/base44Client';
+import { cn } from '@/lib/utils';
 import { getDropboxAccount, connectDropbox, disconnectDropbox } from '@/lib/preroll/cloud';
 import CloudOffloadButton from './CloudOffloadButton';
+
+const DESTINATIONS = [
+  { value: 'device', label: 'This device', hint: 'Recordings stay on this device only', icon: Smartphone },
+  { value: 'cloud', label: 'Cloud', hint: 'Pushed to your connected account', icon: Cloud },
+];
 
 export default function CloudStorageSection() {
   const s = useSettings();
@@ -45,42 +51,66 @@ export default function CloudStorageSection() {
 
   return (
     <SettingSection
-      title="Cloud storage"
-      description="Saved recordings are pushed to your cloud account automatically, then cleared from this device"
+      title="Where recordings are saved"
+      description="Keep captures on this device, or push them straight to your own cloud account"
     >
       {!authed ? (
-        <Button variant="secondary" onClick={() => base44.auth.redirectToLogin()}>Sign in to connect</Button>
+        <Button variant="secondary" onClick={() => base44.auth.redirectToLogin()}>Sign in to use cloud storage</Button>
       ) : (
         <>
-          <SettingRow
-            title="Dropbox"
-            description={
-              loading
-                ? 'Checking connection…'
-                : account
-                ? `Connected${account.name ? ` as ${account.name}` : ''}${account.email ? ` · ${account.email}` : ''}`
-                : 'Link your own Dropbox account'
-            }
-          >
-            {account ? (
-              <Button size="sm" variant="secondary" onClick={handleDisconnect}>Disconnect</Button>
-            ) : (
-              <Button size="sm" onClick={handleConnect} disabled={loading}>Connect</Button>
-            )}
-          </SettingRow>
+          <div className="grid grid-cols-2 gap-2">
+            {DESTINATIONS.map(({ value, label, hint, icon: Icon }) => {
+              const active = (value === 'cloud') === s.autoOffload;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => s.setAutoOffload(value === 'cloud')}
+                  className={cn(
+                    'min-h-[44px] rounded-lg border p-3 text-left transition-colors',
+                    active ? 'border-primary bg-primary/10' : 'border-border bg-card hover:bg-muted/40',
+                  )}
+                >
+                  <Icon className={cn('mb-2 h-4 w-4', active ? 'text-primary' : 'text-muted-foreground')} />
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+                </button>
+              );
+            })}
+          </div>
 
-          <SettingRow title="Google Drive" description="Uses the Google account already connected to this app">
-            <span className="text-sm text-muted-foreground">Linked</span>
-          </SettingRow>
+          {s.autoOffload && (
+            <div className="mt-4 flex flex-col gap-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Cloud account</p>
 
-          <SettingRow
-            title="Automatic offload"
-            description="Push each recording to the cloud as soon as it is saved, and remove the on-device copy"
-          >
-            <Switch checked={s.autoOffload} onCheckedChange={s.setAutoOffload} />
-          </SettingRow>
+              <SettingRow
+                title="Dropbox"
+                description={
+                  loading
+                    ? 'Checking connection…'
+                    : account
+                    ? `Connected${account.name ? ` as ${account.name}` : ''}${account.email ? ` · ${account.email}` : ''}`
+                    : 'Quick setup — link your account in one tap'
+                }
+              >
+                {account ? (
+                  <Button size="sm" variant="secondary" onClick={handleDisconnect}>Disconnect</Button>
+                ) : (
+                  <Button size="sm" onClick={handleConnect} disabled={loading}>Connect</Button>
+                )}
+              </SettingRow>
 
-          <CloudOffloadButton />
+              <SettingRow title="Google Drive" description="Needs your own Google OAuth app — setup later">
+                <span className="text-xs text-muted-foreground">Not available yet</span>
+              </SettingRow>
+
+              <SettingRow title="OneDrive" description="Needs your own Microsoft OAuth app — setup later">
+                <span className="text-xs text-muted-foreground">Not available yet</span>
+              </SettingRow>
+
+              {account && <CloudOffloadButton />}
+            </div>
+          )}
         </>
       )}
     </SettingSection>

@@ -28,7 +28,7 @@ export default function CloudOffloadButton() {
   };
   useEffect(() => { load(); }, []);
 
-  const label = CLOUD_LABELS[target] || 'cloud storage';
+  const label = CLOUD_LABELS[target] || 'Dropbox';
   const savedCount = stats?.savedCount || 0;
 
   const run = async () => {
@@ -56,12 +56,14 @@ export default function CloudOffloadButton() {
       <p className="text-sm">Saved recordings on this device</p>
       <p className="mb-3 text-sm text-muted-foreground">
         {stats
-          ? `${savedCount} saved capture${savedCount === 1 ? '' : 's'} · ${fmt(stats.savedBytes)} · backing up to ${label}`
+          ? target
+            ? `${savedCount} saved capture${savedCount === 1 ? '' : 's'} · ${fmt(stats.savedBytes)} · backing up to ${label}`
+            : `${savedCount} saved capture${savedCount === 1 ? '' : 's'} · ${fmt(stats.savedBytes)} · connect Dropbox to back these up`
           : 'Calculating…'}
       </p>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="secondary" className="w-full" disabled={busy || !savedCount}>
+          <Button variant="secondary" className="w-full" disabled={busy || !savedCount || !target}>
             {busy ? `Offloading ${progress?.done ?? 0}/${progress?.total ?? 0}…` : `Back up all saved recordings to ${label}`}
           </Button>
         </AlertDialogTrigger>

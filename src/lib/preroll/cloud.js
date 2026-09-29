@@ -4,7 +4,7 @@ import { listRecordings, deleteRecording } from './storage';
 // Per-user Dropbox connector (each app user links their own Dropbox account).
 export const DROPBOX_CONNECTOR_ID = '6abb66f6e7acff92271379c6';
 
-export const CLOUD_LABELS = { dropbox: 'Dropbox', drive: 'Google Drive' };
+export const CLOUD_LABELS = { dropbox: 'Dropbox' };
 
 // Returns the linked Dropbox account, or null when Dropbox is not connected.
 export const getDropboxAccount = async () => {
@@ -19,19 +19,15 @@ export const getDropboxAccount = async () => {
 export const connectDropbox = () => base44.connectors.connectAppUser(DROPBOX_CONNECTOR_ID);
 export const disconnectDropbox = () => base44.connectors.disconnectAppUser(DROPBOX_CONNECTOR_ID);
 
-// Where captures go: the user's own Dropbox when it is linked, otherwise the
-// Google account already connected to this app.
-export const resolveCloudTarget = async () => ((await getDropboxAccount()) ? 'dropbox' : 'drive');
+// Dropbox is the only cloud destination that offers one-tap setup.
+export const resolveCloudTarget = async () => ((await getDropboxAccount()) ? 'dropbox' : null);
 
-const pushOne = async (rec, target) => {
+const pushOne = async (rec) => {
   const { file_uri } = await base44.integrations.Core.UploadPrivateFile({
     file: new File([rec.blob], rec.name, { type: 'audio/wav' }),
   });
   const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({ file_uri, expires_in: 900 });
-  const res = await base44.functions.invoke(target === 'dropbox' ? 'dropboxUpload' : 'driveUpload', {
-    signed_url,
-    filename: rec.name,
-  });
+  const res = await base44.functions.invoke('dropboxUpload', { signed_url, filename: rec.name });
   if (!res.data?.ok) throw new Error(res.data?.error || 'upload failed');
 };
 
@@ -43,6 +39,8 @@ export const offloadToCloud = async (onProgress) => {
   offloadRunning = true;
   try {
     const target = await resolveCloudTarget();
+    if (!target) return { uploaded: 0, failed: 0, total: 0, bytes: 0, target: null };
+
     const all = await listRecordings();
     const saved = all.filter((r) => !(r.temporary && !r.protected) && r.blob);
     let uploaded = 0;
@@ -52,7 +50,7 @@ export const offloadToCloud = async (onProgress) => {
     for (const rec of saved) {
       onProgress?.({ done: uploaded + failed, total: saved.length });
       try {
-        await pushOne(rec, target);
+        await pushOne(rec);
         await deleteRecording(rec.id);
         bytes += rec.sizeBytes || rec.blob.size || 0;
         uploaded += 1;
