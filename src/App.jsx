@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -15,6 +15,7 @@ import TabLayout from '@/components/btau/TabLayout';
 import TabOutletLayout from '@/components/btau/TabOutletLayout';
 import ThemeColorSync from '@/components/ThemeColorSync';
 import { TabStackProvider, TAB_PATHS } from '@/hooks/useTabStack';
+import { initInstallWatch } from '@/lib/deviceSetup';
 
 const Home = lazy(() => import('./pages/Home'));
 
@@ -99,6 +100,10 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  useEffect(() => {
+    initInstallWatch();
+  }, []);
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <ThemeColorSync />

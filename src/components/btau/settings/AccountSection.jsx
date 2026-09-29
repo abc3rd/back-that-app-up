@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import SettingSection from './SettingSection';
+import { resetOnboarding } from '@/lib/deviceSetup';
 
 export default function AccountSection() {
   const { toast } = useToast();
@@ -39,7 +40,7 @@ export default function AccountSection() {
         </div>
         <p className="mt-2 text-sm text-muted-foreground">New to the app? Walk through the quick setup and how-it-works explainer again.</p>
         <button
-          onClick={() => { localStorage.removeItem('btau.onboarded'); window.location.href = '/'; }}
+          onClick={() => { resetOnboarding(); window.location.href = '/onboarding'; }}
           className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
         >
           Replay setup guide

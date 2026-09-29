@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Radio, ShieldCheck, Save, Search, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
+import DeviceSetup from './DeviceSetup';
+import { isSetupConfirmed, confirmSetup, markTourDone } from '@/lib/deviceSetup';
 
 const STEPS = [
   {
@@ -41,6 +43,8 @@ const STEPS = [
 ];
 
 export default function Onboarding({ onDone }) {
+  const tourNeeded = useRef(localStorage.getItem('btau.onboarded') !== '1').current;
+  const [phase, setPhase] = useState(() => (isSetupConfirmed() ? 'tour' : 'setup'));
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const total = STEPS.length;
@@ -55,9 +59,17 @@ export default function Onboarding({ onDone }) {
   };
 
   const finish = () => {
-    localStorage.setItem('btau.onboarded', '1');
+    markTourDone();
+    confirmSetup();
     onDone?.();
   };
+
+  const afterSetup = () => {
+    if (tourNeeded) setPhase('tour');
+    else finish();
+  };
+
+  if (phase === 'setup') return <DeviceSetup onDone={afterSetup} />;
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background">

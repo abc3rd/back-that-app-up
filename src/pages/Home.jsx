@@ -21,6 +21,7 @@ import PublicFooter from '@/components/btau/PublicFooter';
 import QuickBackupButton from '@/components/btau/QuickBackupButton';
 import useQuickBackup from '@/hooks/useQuickBackup';
 import { useToast } from '@/components/ui/use-toast';
+import { needsOnboarding } from '@/lib/deviceSetup';
 
 export default function Home() {
   const scrollRef = useRef(null);
@@ -29,7 +30,7 @@ export default function Home() {
   const [highlightId, setHighlightId] = useState(null);
   const navigate = useNavigate();
   useEffect(() => {
-    if (localStorage.getItem('btau.onboarded') !== '1') navigate('/onboarding', { replace: true });
+    if (needsOnboarding()) navigate('/onboarding', { replace: true });
   }, []);
   const rewindLabel = REWIND_OPTIONS.find((o) => o.value === p.rewind)?.label ?? `${p.rewind} s`;
   const { toast } = useToast();
