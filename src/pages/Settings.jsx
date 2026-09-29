@@ -4,6 +4,7 @@ import { useTabScroll } from '@/hooks/useTabScroll';
 import CaptureSection from '@/components/btau/settings/CaptureSection';
 import TriggersSection from '@/components/btau/settings/TriggersSection';
 import StorageSection from '@/components/btau/settings/StorageSection';
+import SavedStorageSection from '@/components/btau/settings/SavedStorageSection';
 import AudioSection from '@/components/btau/settings/AudioSection';
 import ArcSection from '@/components/btau/settings/ArcSection';
 import AiSection from '@/components/btau/settings/AiSection';
@@ -25,6 +26,7 @@ export default function Settings() {
           <CaptureSection />
           <TriggersSection />
           <StorageSection />
+          <SavedStorageSection />
           <AudioSection />
           <ArcSection />
           <AiSection />
