@@ -12,6 +12,7 @@ import {
   cleanupByStorageLimit,
 } from '@/lib/preroll/storage';
 import { captureLocation, reverseGeocode, buildMetadata } from '@/lib/preroll/metadata';
+import { getDropboxAccount, offloadToDropbox } from '@/lib/preroll/cloud';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
@@ -94,6 +95,19 @@ export default function usePreRoll() {
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
+  // Automatic cloud offload: push saved captures to the user's own Dropbox and
+  // drop the local copy so device space frees itself.
+  const autoOffloadNow = useCallback(async () => {
+    if (!settings.autoOffload) return;
+    if (!(await getDropboxAccount())) return;
+    const r = await offloadToDropbox();
+    if (r.uploaded) {
+      refresh();
+      toast({ description: `Moved ${r.uploaded} recording${r.uploaded === 1 ? '' : 's'} to Dropbox` });
+    }
+  }, [settings.autoOffload, refresh, toast]);
+  useEffect(() => { autoOffloadNow(); }, [autoOffloadNow]);
+
   const handleCapture = useCallback(async ({ blob, durationMs, peakDb, triggerType, triggerTimestamp, triggerOffsetMs }) => {
     const ts = triggerTimestamp || Date.now();
     const protectedCapture = triggerType === 'button' || triggerType === 'voice';
@@ -137,6 +151,7 @@ export default function usePreRoll() {
       if (effMaxStorageBytes > 0) await cleanupByStorageLimit(effMaxStorageBytes);
       refresh();
       if (protectedCapture) saveMoment(rec);
+      autoOffloadNow();
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       const full = e?.name === 'QuotaExceededError' || /quota|storage/i.test(e?.message || '');
@@ -146,7 +161,7 @@ export default function usePreRoll() {
       toast({ variant: 'destructive', description: 'Capture failed — see the message at the top of the screen' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current);
-  }, [refresh, maxAuto, effTempRetentionHours, effMaxStorageBytes, saveMoment, toast]);
+  }, [refresh, maxAuto, effTempRetentionHours, effMaxStorageBytes, saveMoment, toast, autoOffloadNow]);
 
   const stopRec = useCallback(() => {
     recGenRef.current++; // invalidate any pending restart from a stale instance

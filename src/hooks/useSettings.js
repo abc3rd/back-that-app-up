@@ -33,6 +33,7 @@ const DEFAULTS = {
   sound: false,
   vibration: false,
   notifications: false,
+  autoOffload: false,
 };
 
 const load = () => {
@@ -150,6 +151,7 @@ export function SettingsProvider({ children }) {
   const setSound = (v) => set({ sound: v });
   const setVibration = (v) => set({ vibration: v });
   const setNotifications = (v) => set({ notifications: v });
+  const setAutoOffload = (v) => set({ autoOffload: v });
 
   const value = {
     ...s,
@@ -160,7 +162,7 @@ export function SettingsProvider({ children }) {
     setVoiceArm, setPhrase, setCustomPhrases, setAutoCapture, setThreshold, setSustainedDuration,
     setSpikeCooldown, setMaxAuto, setTempRetentionHours, setMaxStorageMB, setQuality, setInputDeviceId,
     setArcEnabled, setLocalOnly, setDriveFolder, setLocationTagging,
-    setAiTranscription, setAutoListen, setSound, setVibration, setNotifications,
+    setAiTranscription, setAutoListen, setSound, setVibration, setNotifications, setAutoOffload,
   };
 
   return React.createElement(SettingsContext.Provider, { value }, children);

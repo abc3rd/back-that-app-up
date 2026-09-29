@@ -18,7 +18,19 @@ export const connectDropbox = () => base44.connectors.connectAppUser(DROPBOX_CON
 export const disconnectDropbox = () => base44.connectors.disconnectAppUser(DROPBOX_CONNECTOR_ID);
 
 // Upload every saved capture to the user's Dropbox, then drop the local copy.
+let offloadRunning = false;
+
 export const offloadToDropbox = async (onProgress) => {
+  if (offloadRunning) return { uploaded: 0, failed: 0, total: 0, bytes: 0 };
+  offloadRunning = true;
+  try {
+    return await runOffload(onProgress);
+  } finally {
+    offloadRunning = false;
+  }
+};
+
+const runOffload = async (onProgress) => {
   const all = await listRecordings();
   const saved = all.filter((r) => !(r.temporary && !r.protected) && r.blob);
   let uploaded = 0;

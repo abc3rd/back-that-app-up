@@ -24,20 +24,23 @@ export default function Moments() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
+  const searchSeq = useRef(0);
 
   const runSearch = useCallback(async (q) => {
-    if (!q) { setSearchQuery(''); setSearchResults(null); return; }
+    const seq = ++searchSeq.current;
+    if (!q) { setSearchQuery(''); setSearchResults(null); setSearching(false); return; }
     setSearchQuery(q);
     setSearching(true);
     try {
       const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const query = { $or: [ { transcript: { $regex: esc, $options: 'i' } }, { description: { $regex: esc, $options: 'i' } } ] };
       const res = await base44.entities.Moment.filter(query, { sort: '-created_date', limit: 50 });
+      if (seq !== searchSeq.current) return;
       setSearchResults(res.items || []);
     } catch (e) {
-      setSearchResults([]);
+      if (seq === searchSeq.current) setSearchResults([]);
     } finally {
-      setSearching(false);
+      if (seq === searchSeq.current) setSearching(false);
     }
   }, []);
 

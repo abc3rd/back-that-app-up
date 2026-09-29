@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import SettingSection from './SettingSection';
 import SettingRow from './SettingRow';
 import { useToast } from '@/components/ui/use-toast';
+import { useSettings } from '@/hooks/useSettings';
 import { base44 } from '@/api/base44Client';
 import { getDropboxAccount, connectDropbox, disconnectDropbox } from '@/lib/preroll/cloud';
 import DropboxOffloadButton from './DropboxOffloadButton';
 
 export default function CloudStorageSection() {
+  const s = useSettings();
   const { toast } = useToast();
   const [authed, setAuthed] = useState(true);
   const [account, setAccount] = useState(null);
@@ -62,7 +65,17 @@ export default function CloudStorageSection() {
               <Button size="sm" onClick={handleConnect} disabled={loading}>Connect</Button>
             )}
           </SettingRow>
-          {account && <DropboxOffloadButton />}
+          {account && (
+            <>
+              <SettingRow
+                title="Automatic offload"
+                description="Move saved recordings to Dropbox as soon as they are backed up, and whenever you open the app"
+              >
+                <Switch checked={s.autoOffload} onCheckedChange={s.setAutoOffload} />
+              </SettingRow>
+              <DropboxOffloadButton />
+            </>
+          )}
         </>
       )}
     </SettingSection>
