@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useSettings } from '@/hooks/useSettings';
 import { base44 } from '@/api/base44Client';
 import { getDropboxAccount, connectDropbox, disconnectDropbox } from '@/lib/preroll/cloud';
-import DropboxOffloadButton from './DropboxOffloadButton';
+import CloudOffloadButton from './CloudOffloadButton';
 
 export default function CloudStorageSection() {
   const s = useSettings();
@@ -44,7 +44,10 @@ export default function CloudStorageSection() {
   };
 
   return (
-    <SettingSection title="Cloud storage" description="Back up saved recordings to your own cloud account">
+    <SettingSection
+      title="Cloud storage"
+      description="Saved recordings are pushed to your cloud account automatically, then cleared from this device"
+    >
       {!authed ? (
         <Button variant="secondary" onClick={() => base44.auth.redirectToLogin()}>Sign in to connect</Button>
       ) : (
@@ -56,7 +59,7 @@ export default function CloudStorageSection() {
                 ? 'Checking connection…'
                 : account
                 ? `Connected${account.name ? ` as ${account.name}` : ''}${account.email ? ` · ${account.email}` : ''}`
-                : 'No account connected yet'
+                : 'Link your own Dropbox account'
             }
           >
             {account ? (
@@ -65,17 +68,19 @@ export default function CloudStorageSection() {
               <Button size="sm" onClick={handleConnect} disabled={loading}>Connect</Button>
             )}
           </SettingRow>
-          {account && (
-            <>
-              <SettingRow
-                title="Automatic offload"
-                description="Move saved recordings to Dropbox as soon as they are backed up, and whenever you open the app"
-              >
-                <Switch checked={s.autoOffload} onCheckedChange={s.setAutoOffload} />
-              </SettingRow>
-              <DropboxOffloadButton />
-            </>
-          )}
+
+          <SettingRow title="Google Drive" description="Uses the Google account already connected to this app">
+            <span className="text-sm text-muted-foreground">Linked</span>
+          </SettingRow>
+
+          <SettingRow
+            title="Automatic offload"
+            description="Push each recording to the cloud as soon as it is saved, and remove the on-device copy"
+          >
+            <Switch checked={s.autoOffload} onCheckedChange={s.setAutoOffload} />
+          </SettingRow>
+
+          <CloudOffloadButton />
         </>
       )}
     </SettingSection>

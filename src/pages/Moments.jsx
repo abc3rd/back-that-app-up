@@ -79,10 +79,6 @@ export default function Moments() {
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : moments.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              No moments yet. Save a back-up on the Home screen and it will appear here with its transcript.
-            </p>
           ) : (
             <>
               <TranscriptSearchBar onSearch={runSearch} busy={searching} />
@@ -102,6 +98,10 @@ export default function Moments() {
                     ))}
                   </div>
                 )
+              ) : moments.length === 0 ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  No moments yet. Save a back-up on the Home screen and it will appear here with its transcript.
+                </p>
               ) : (
                 <>
                   <TagFilter tags={allTags} active={activeTag} onSelect={setActiveTag} />

@@ -12,7 +12,7 @@ import {
   cleanupByStorageLimit,
 } from '@/lib/preroll/storage';
 import { captureLocation, reverseGeocode, buildMetadata } from '@/lib/preroll/metadata';
-import { getDropboxAccount, offloadToDropbox } from '@/lib/preroll/cloud';
+import { offloadToCloud, CLOUD_LABELS } from '@/lib/preroll/cloud';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
@@ -99,11 +99,10 @@ export default function usePreRoll() {
   // drop the local copy so device space frees itself.
   const autoOffloadNow = useCallback(async () => {
     if (!settings.autoOffload) return;
-    if (!(await getDropboxAccount())) return;
-    const r = await offloadToDropbox();
+    const r = await offloadToCloud();
     if (r.uploaded) {
       refresh();
-      toast({ description: `Moved ${r.uploaded} recording${r.uploaded === 1 ? '' : 's'} to Dropbox` });
+      toast({ description: `Moved ${r.uploaded} recording${r.uploaded === 1 ? '' : 's'} to ${CLOUD_LABELS[r.target] || 'cloud storage'}` });
     }
   }, [settings.autoOffload, refresh, toast]);
   useEffect(() => { autoOffloadNow(); }, [autoOffloadNow]);
