@@ -47,6 +47,7 @@ export default function usePreRoll() {
   const lastHeardRef = useRef('');
   const recordingsRef = useRef([]);
   const transcribingRef = useRef(new Set());
+  const pendingMomentRef = useRef(new Set());
 
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -73,24 +74,22 @@ export default function usePreRoll() {
   useEffect(() => { soundRef.current = settings.sound; }, [settings.sound]);
   useEffect(() => { vibrationRef.current = settings.vibration; }, [settings.vibration]);
 
+  // Every capture becomes a moment tagged with how it was triggered (Manual
+  // Button / Voice Command / Sound Spike), so the list can be scanned by type.
   const saveMoment = useCallback(async (rec) => {
-    try {
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: new File([rec.blob], rec.name, { type: 'audio/wav' }) });
-      await base44.entities.Moment.create({
-        name: rec.name,
-        timestamp: rec.timestamp,
-        trigger_type: rec.triggerType,
-        duration_ms: rec.durationMs,
-        peak_db: rec.peakDb,
-        location_label: rec.location?.locality || rec.location?.place || '',
-        tags: rec.tags || [],
-        audio_uri: file_uri,
-        transcript: '',
-        status: 'pending',
-      });
-    } catch (e) {
-      // best-effort: workflow transcription failure must not block the capture
-    }
+    const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: new File([rec.blob], rec.name, { type: 'audio/wav' }) });
+    return base44.entities.Moment.create({
+      name: rec.name,
+      timestamp: rec.timestamp,
+      trigger_type: rec.triggerType,
+      duration_ms: rec.durationMs,
+      peak_db: rec.peakDb,
+      location_label: rec.location?.locality || rec.location?.place || '',
+      tags: rec.tags || [],
+      audio_uri: file_uri,
+      transcript: rec.transcript || '',
+      status: 'pending',
+    });
   }, []);
 
   const refresh = useCallback(async () => {
@@ -111,25 +110,38 @@ export default function usePreRoll() {
     try { await saveRecording(merged); } catch {}
   }, []);
 
-  const transcribeLocal = useCallback(async (rec) => {
+  // Reads the text back out of the audio already stored with a moment, so the
+  // moment gets its transcript without a second upload of the same clip.
+  const transcribeMomentAudio = useCallback(async (momentId) => {
+    const moment = await base44.entities.Moment.get(momentId);
+    if (!moment?.audio_uri) throw new Error('Moment has no audio');
+    const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({ file_uri: moment.audio_uri, expires_in: 900 });
+    const res = await base44.functions.invoke('transcribeRecording', { audioUrl: signed_url });
+    if (res.data?.error) throw new Error(res.data.error);
+    return res.data?.transcript || '';
+  }, []);
+
+  const transcribeRec = useCallback(async (rec) => {
     if (!effAiTranscription || !rec?.blob || transcribingRef.current.has(rec.id)) return;
     transcribingRef.current.add(rec.id);
     await applyTranscript(rec.id, { transcriptStatus: 'transcribing' });
     try {
-      const transcript = await transcribeLocalRecording(rec);
+      const transcript = rec.momentId ? await transcribeMomentAudio(rec.momentId) : await transcribeLocalRecording(rec);
       await applyTranscript(rec.id, { transcript, transcriptStatus: 'done' });
+      if (rec.momentId) await base44.entities.Moment.update(rec.momentId, { transcript, status: 'done' });
     } catch {
       await applyTranscript(rec.id, { transcriptStatus: 'failed' });
     } finally {
       transcribingRef.current.delete(rec.id);
     }
-  }, [effAiTranscription, applyTranscript]);
+  }, [effAiTranscription, applyTranscript, transcribeMomentAudio]);
 
-  // Newest captures first, so the one just saved reads back immediately.
+  // Newest captures first, so the one just saved reads back immediately. Clips
+  // still waiting on their moment are handled by the save flow itself.
   useEffect(() => {
     if (!effAiTranscription) return;
-    recordings.filter((r) => r.blob && !r.transcriptStatus).slice(0, 3).forEach((r) => transcribeLocal(r));
-  }, [recordings, effAiTranscription, transcribeLocal]);
+    recordings.filter((r) => r.blob && !r.transcriptStatus && !pendingMomentRef.current.has(r.id)).slice(0, 3).forEach((r) => transcribeRec(r));
+  }, [recordings, effAiTranscription, transcribeRec]);
 
   // Automatic cloud offload: push saved captures to the user's own Dropbox and
   // drop the local copy so device space frees itself.
@@ -175,6 +187,7 @@ export default function usePreRoll() {
       meta,
       blob,
     };
+    pendingMomentRef.current.add(rec.id);
     setRecordings((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
     setCapturing(false);
     setCaptureKind(null);
@@ -186,8 +199,22 @@ export default function usePreRoll() {
       if (effTempRetentionHours > 0) await cleanupTemporaryByAge(effTempRetentionHours);
       if (effMaxStorageBytes > 0) await cleanupByStorageLimit(effMaxStorageBytes);
       refresh();
-      if (protectedCapture) saveMoment(rec);
       autoOffloadNow();
+      // Moment + transcript are best-effort: the clip is already saved on device,
+      // so a hiccup here must never surface as a failed capture.
+      try {
+        const moment = await saveMoment(rec);
+        const linked = { ...rec, momentId: moment?.id };
+        if (moment?.id) {
+          setRecordings((prev) => prev.map((r) => (r.id === rec.id ? linked : r)));
+          try { await saveRecording(linked); } catch {}
+        }
+        pendingMomentRef.current.delete(rec.id);
+        transcribeRec(linked);
+      } catch {
+        pendingMomentRef.current.delete(rec.id);
+        transcribeRec(rec);
+      }
     } catch (e) {
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       const full = e?.name === 'QuotaExceededError' || /quota|storage/i.test(e?.message || '');
@@ -197,7 +224,7 @@ export default function usePreRoll() {
       toast({ variant: 'destructive', description: 'Capture failed — see the message at the top of the screen' });
     }
     if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current);
-  }, [refresh, maxAuto, effTempRetentionHours, effMaxStorageBytes, saveMoment, toast, autoOffloadNow]);
+  }, [refresh, maxAuto, effTempRetentionHours, effMaxStorageBytes, saveMoment, toast, autoOffloadNow, transcribeRec]);
 
   const stopRec = useCallback(() => {
     recGenRef.current++; // invalidate any pending restart from a stale instance

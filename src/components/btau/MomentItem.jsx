@@ -88,12 +88,12 @@ export default function MomentItem({ moment }) {
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
+      <div className="rounded-xl bg-secondary/50 p-3 text-sm leading-relaxed text-foreground/80">
+        <TranscriptBlock transcript={moment.transcript} status={status} />
+      </div>
       <div className="flex items-center justify-between gap-2">
         <PlaybackSpeedControl audioRef={audioRef} />
         {savingTags && <span className="text-xs text-muted-foreground">saving…</span>}
-      </div>
-      <div className="rounded-xl bg-secondary/50 p-3 text-sm leading-relaxed text-foreground/80">
-        <TranscriptBlock transcript={moment.transcript} status={status} />
       </div>
       <div className="border-t pt-3">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Tags</p>
