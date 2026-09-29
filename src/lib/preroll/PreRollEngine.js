@@ -24,6 +24,10 @@ export default class PreRollEngine {
     this.spikeCooldownMs = 2000;
     this.sustainedDurationMs = 0;
     this.sustainedSince = 0;
+    this.floorDb = null;     // slow-moving estimate of the room's ambient level
+    this.spikeArmed = true;  // re-arms once the level falls back down
+    this.riseDb = 12;        // a spike must rise this far above the ambient floor
+    this.rearmDropDb = 6;    // ...and settles back near that floor to re-arm
     this.extendOnSecondTrigger = false;
     this.lastCaptureAt = 0;
     this.sampleRate = STANDARD_RATE;
@@ -89,17 +93,18 @@ export default class PreRollEngine {
     this.lastDb = db;
     this.write(samples);
 
+    const spike = this.detectSpike(db);
     if (this.post) {
       this.post.chunks.push(samples.slice());
       this.post.count += n;
       this.post.peak = Math.max(this.post.peak, db);
       if (this.post.count >= this.post.seconds * this.sampleRate) this.finishPost();
-    } else if (this.autoCapture && db >= this.threshold) {
+    } else if (this.autoCapture && spike) {
       if (this.sustainedDurationMs > 0) {
         if (!this.sustainedSince) this.sustainedSince = Date.now();
-        if (Date.now() - this.sustainedSince >= this.sustainedDurationMs && this.offSpikeCooldown()) this.capture('spike');
+        if (Date.now() - this.sustainedSince >= this.sustainedDurationMs && this.offSpikeCooldown()) this.fireSpike();
       } else if (this.offSpikeCooldown()) {
-        this.capture('spike');
+        this.fireSpike();
       }
     } else {
       this.sustainedSince = 0;
@@ -109,6 +114,22 @@ export default class PreRollEngine {
 
   offSpikeCooldown() {
     return Date.now() - this.lastCaptureAt >= this.spikeCooldownMs + this.postRollSeconds * 1000;
+  }
+
+  // A spike has to clear the threshold AND rise well above the level the room
+  // has been sitting at, so steady loud noise (a fan, chatter, traffic) no
+  // longer trips it. The latch re-arms only after the level falls back, so one
+  // loud event produces one capture instead of a burst of them.
+  detectSpike(db) {
+    if (this.floorDb === null) this.floorDb = Math.min(db, this.threshold - this.riseDb);
+    else if (db < this.threshold) this.floorDb = this.floorDb * 0.99 + db * 0.01;
+    if (db - this.floorDb <= this.rearmDropDb) this.spikeArmed = true;
+    return this.spikeArmed && db >= this.threshold && db - this.floorDb >= this.riseDb;
+  }
+
+  fireSpike() {
+    this.spikeArmed = false;
+    this.capture('spike');
   }
 
   capture(type) {

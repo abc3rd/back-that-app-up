@@ -2,9 +2,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Rewind } from 'lucide-react';
 
-export default function SaveButton({ listening, capturing, rewindLabel, onSave }) {
+const HINTS = {
+  button: (rewindLabel, postRoll) => `Saving now — last ${rewindLabel}, then ${postRoll}s more`,
+  voice: () => 'Voice command heard — saving the moment…',
+  spike: () => 'Sound spike detected — saving the moment…',
+};
+
+export default function SaveButton({ listening, capturing, captureKind, rewindLabel, postRoll, onSave }) {
   const hint = capturing
-    ? 'Spike detected — capturing 10 s of post-roll…'
+    ? (HINTS[captureKind] || (() => 'Saving the moment…'))(rewindLabel, postRoll)
     : listening
       ? `Saves the last ${rewindLabel} and keeps listening`
       : 'Arm listening to enable';

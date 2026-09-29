@@ -6,6 +6,8 @@ import { base44 } from '@/api/base44Client';
 import ScreenHeader from '@/components/btau/ScreenHeader';
 import PlaybackSpeedControl from '@/components/btau/PlaybackSpeedControl';
 import TagEditor from '@/components/btau/TagEditor';
+import TriggerBadge from '@/components/btau/TriggerBadge';
+import TranscriptBlock from '@/components/btau/TranscriptBlock';
 
 export default function MomentDetail() {
   const { id } = useParams();
@@ -84,7 +86,6 @@ export default function MomentDetail() {
 
   const ts = moment.timestamp ? new Date(moment.timestamp) : new Date(moment.created_date);
   const status = moment.status || 'pending';
-  const transcribing = status === 'pending' || status === 'transcribing';
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -105,10 +106,13 @@ export default function MomentDetail() {
             {signing ? <Loader2 className="h-4 w-4 animate-spin" /> : playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
           </button>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold">{moment.name || format(ts, 'MMM d · HH:mm:ss')}</p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-base font-semibold">{moment.name || format(ts, 'MMM d · HH:mm:ss')}</p>
+              <TriggerBadge type={moment.trigger_type} />
+            </div>
             <p className="mt-0.5 font-mono text-xs text-foreground/70">{format(ts, 'MMM d, yyyy · HH:mm:ss')}</p>
             <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-              {moment.duration_ms ? `${(moment.duration_ms / 1000).toFixed(1)}s` : ''} · {moment.trigger_type || 'capture'}
+              {moment.duration_ms ? `${(moment.duration_ms / 1000).toFixed(1)}s` : ''}
               {moment.location_label ? ` · 📍 ${moment.location_label}` : ''}
             </p>
           </div>
@@ -117,17 +121,7 @@ export default function MomentDetail() {
         <PlaybackSpeedControl audioRef={audioRef} />
 
         <div className="rounded-xl bg-secondary/50 p-4 text-sm leading-relaxed text-foreground/80">
-          {transcribing ? (
-            <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Transcribing…
-            </span>
-          ) : moment.transcript ? (
-            <p>{moment.transcript}</p>
-          ) : status === 'failed' ? (
-            <p className="text-destructive">Transcription failed</p>
-          ) : (
-            <p className="text-muted-foreground">No transcript yet.</p>
-          )}
+          <TranscriptBlock transcript={moment.transcript} status={status} />
         </div>
 
         <div className="border-t pt-4">

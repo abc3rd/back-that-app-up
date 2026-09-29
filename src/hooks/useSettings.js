@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 const KEY = 'btau.settings.v1';
 const PLAN_KEY = 'btau.plan';
+const TRANSCRIPT_DEFAULT_KEY = 'btau.transcriptionDefaulted';
 const PHRASE_DEFAULT = 'back that app up';
 
 const DEFAULTS = {
@@ -28,7 +29,7 @@ const DEFAULTS = {
   localOnly: true,
   driveFolder: 'Back That App Up!',
   locationTagging: true,
-  aiTranscription: false,
+  aiTranscription: true,
   autoListen: false,
   sound: false,
   vibration: false,
@@ -39,11 +40,19 @@ const DEFAULTS = {
 const load = () => {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) || '{}');
-    return {
+    const merged = {
       ...DEFAULTS,
       ...parsed,
       customPhrases: Array.isArray(parsed.customPhrases) ? parsed.customPhrases : [],
     };
+    // Transcription is now on out of the box. Apply that once for anyone who
+    // already had settings saved before the change.
+    if (localStorage.getItem(TRANSCRIPT_DEFAULT_KEY) !== '1') {
+      localStorage.setItem(TRANSCRIPT_DEFAULT_KEY, '1');
+      merged.aiTranscription = true;
+      localStorage.setItem(KEY, JSON.stringify(merged));
+    }
+    return merged;
   } catch {
     return DEFAULTS;
   }

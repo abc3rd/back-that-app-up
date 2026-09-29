@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { CheckSquare, Download, Pause, Pencil, Play, Shield, Square, Trash2 } from 'lucide-react';
 import PlaybackSpeedControl from '@/components/btau/PlaybackSpeedControl';
+import TriggerBadge from '@/components/btau/TriggerBadge';
+import TranscriptBlock from '@/components/btau/TranscriptBlock';
 
-const TRIGGER_LABEL = { voice: 'voice', button: 'manual', spike: 'spike' };
-
-export default function RecordingItem({ rec, fresh, highlight, onDelete, onRename, onProtect, selectMode, selected, onToggleSelect }) {
+export default function RecordingItem({ rec, fresh, highlight, transcriptionOn = true, onDelete, onRename, onProtect, selectMode, selected, onToggleSelect }) {
   const audioRef = useRef(null);
   const rootRef = useRef(null);
   const [url, setUrl] = useState();
@@ -14,7 +14,6 @@ export default function RecordingItem({ rec, fresh, highlight, onDelete, onRenam
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const label = rec.label || format(rec.timestamp, 'MMM d · HH:mm:ss');
-  const triggerLabel = TRIGGER_LABEL[rec.triggerType] || rec.reason || 'capture';
   const isTemporary = rec.temporary && !rec.protected;
   const hasMarker = rec.triggerOffsetMs && rec.durationMs;
 
@@ -66,11 +65,14 @@ export default function RecordingItem({ rec, fresh, highlight, onDelete, onRenam
               className="w-full rounded bg-secondary px-2 py-1 text-sm font-medium outline-none ring-1 ring-ring"
             />
           ) : (
-            <p className="truncate text-sm font-medium">{label}</p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-medium">{label}</p>
+              <TriggerBadge type={rec.triggerType} fallback={rec.reason} />
+            </div>
           )}
           <p className="mt-0.5 font-mono text-sm text-foreground/70">{format(rec.timestamp, 'MMM d, yyyy · HH:mm:ss')}</p>
           <p className="mt-0.5 truncate font-mono text-sm text-muted-foreground">
-            {(rec.durationMs / 1000).toFixed(1)}s · {Math.round(rec.sizeBytes / 1024)} KB · {rec.peakDb.toFixed(0)} dB · {triggerLabel}{isTemporary ? ' · temporary' : ''}
+            {(rec.durationMs / 1000).toFixed(1)}s · {Math.round(rec.sizeBytes / 1024)} KB · {rec.peakDb.toFixed(0)} dB{isTemporary ? ' · temporary' : ''}
           </p>
           {(rec.location?.locality || (rec.tags && rec.tags.length > 0)) && (
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
@@ -106,6 +108,9 @@ export default function RecordingItem({ rec, fresh, highlight, onDelete, onRenam
             />
           </div>
         )}
+      </div>
+      <div className="rounded-xl bg-secondary/50 p-3 text-sm leading-relaxed text-foreground/80">
+        <TranscriptBlock transcript={rec.transcript} status={rec.transcriptStatus} enabled={transcriptionOn} />
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import RecordingItem from './RecordingItem';
 import { buildZip, downloadBlob } from '@/lib/preroll/zip';
 import { useToast } from '@/components/ui/use-toast';
 
-function Group({ title, items, lastSavedId, highlightId, onDelete, onRename, onProtect, action, selectMode, selected, onToggleSelect }) {
+function Group({ title, items, lastSavedId, highlightId, transcriptionOn, onDelete, onRename, onProtect, action, selectMode, selected, onToggleSelect }) {
   if (items.length === 0) return null;
   return (
     <div>
@@ -20,7 +20,7 @@ function Group({ title, items, lastSavedId, highlightId, onDelete, onRename, onP
         <AnimatePresence initial={false}>
           {items.map((rec) => (
             <motion.div key={rec.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 24 }} transition={{ duration: 0.35 }}>
-              <RecordingItem rec={rec} fresh={rec.id === lastSavedId} highlight={rec.id === highlightId} onDelete={onDelete} onRename={onRename} onProtect={onProtect} selectMode={selectMode} selected={selected.has(rec.id)} onToggleSelect={onToggleSelect} />
+              <RecordingItem rec={rec} fresh={rec.id === lastSavedId} highlight={rec.id === highlightId} transcriptionOn={transcriptionOn} onDelete={onDelete} onRename={onRename} onProtect={onProtect} selectMode={selectMode} selected={selected.has(rec.id)} onToggleSelect={onToggleSelect} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -29,7 +29,7 @@ function Group({ title, items, lastSavedId, highlightId, onDelete, onRename, onP
   );
 }
 
-export default function RecordingsList({ recordings, lastSavedId, highlightId, onDelete, onRename, onProtect, onDeleteAllTemporary }) {
+export default function RecordingsList({ recordings, transcriptionOn, lastSavedId, highlightId, onDelete, onRename, onProtect, onDeleteAllTemporary }) {
   const { toast } = useToast();
   const [filter, setFilter] = useState('');
   const [selectMode, setSelectMode] = useState(false);
@@ -124,8 +124,8 @@ export default function RecordingsList({ recordings, lastSavedId, highlightId, o
         </div>
       )}
       <div className="flex flex-col gap-8">
-        <Group title="Saved Moments" items={saved} lastSavedId={lastSavedId} highlightId={highlightId} onDelete={onDelete} onRename={onRename} onProtect={onProtect} selectMode={selectMode} selected={selected} onToggleSelect={toggleSelect} />
-        <Group title="Temporary Captures" items={temp} lastSavedId={lastSavedId} highlightId={highlightId} onDelete={onDelete} onRename={onRename} onProtect={onProtect} action={tempAction} selectMode={selectMode} selected={selected} onToggleSelect={toggleSelect} />
+        <Group title="Saved Moments" items={saved} lastSavedId={lastSavedId} highlightId={highlightId} transcriptionOn={transcriptionOn} onDelete={onDelete} onRename={onRename} onProtect={onProtect} selectMode={selectMode} selected={selected} onToggleSelect={toggleSelect} />
+        <Group title="Temporary Captures" items={temp} lastSavedId={lastSavedId} highlightId={highlightId} transcriptionOn={transcriptionOn} onDelete={onDelete} onRename={onRename} onProtect={onProtect} action={tempAction} selectMode={selectMode} selected={selected} onToggleSelect={toggleSelect} />
       </div>
     </section>
   );

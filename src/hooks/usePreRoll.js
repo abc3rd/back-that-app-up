@@ -13,6 +13,8 @@ import {
 } from '@/lib/preroll/storage';
 import { captureLocation, reverseGeocode, buildMetadata } from '@/lib/preroll/metadata';
 import { offloadToCloud, CLOUD_LABELS } from '@/lib/preroll/cloud';
+import { triggerTag } from '@/lib/preroll/triggers';
+import { transcribeLocalRecording } from '@/lib/preroll/transcribe';
 import { ensurePermission, showStatus, hideStatus } from '@/lib/preroll/statusNotification';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
@@ -43,9 +45,12 @@ export default function usePreRoll() {
   const vibrationRef = useRef(settings.vibration);
   const locRef = useRef(null);
   const lastHeardRef = useRef('');
+  const recordingsRef = useRef([]);
+  const transcribingRef = useRef(new Set());
 
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [captureKind, setCaptureKind] = useState(null);
   const [db, setDb] = useState(0);
   const [recordings, setRecordings] = useState([]);
   const [lastSavedId, setLastSavedId] = useState(null);
@@ -62,6 +67,7 @@ export default function usePreRoll() {
   const { toast } = useToast();
 
   useEffect(() => { listeningRef.current = listening; }, [listening]);
+  useEffect(() => { recordingsRef.current = recordings; }, [recordings]);
   useEffect(() => { voiceArmRef.current = voiceArm; }, [voiceArm]);
   useEffect(() => { silentRef.current = !settings.notifications; }, [settings.notifications]);
   useEffect(() => { soundRef.current = settings.sound; }, [settings.sound]);
@@ -95,6 +101,36 @@ export default function usePreRoll() {
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
 
+  // Visual-voicemail style transcripts: each capture is transcribed in the
+  // background and its text is stored with the recording.
+  const applyTranscript = useCallback(async (id, patch) => {
+    const cur = recordingsRef.current.find((r) => r.id === id);
+    if (!cur) return;
+    const merged = { ...cur, ...patch };
+    setRecordings((prev) => prev.map((r) => (r.id === id ? merged : r)));
+    try { await saveRecording(merged); } catch {}
+  }, []);
+
+  const transcribeLocal = useCallback(async (rec) => {
+    if (!effAiTranscription || !rec?.blob || transcribingRef.current.has(rec.id)) return;
+    transcribingRef.current.add(rec.id);
+    await applyTranscript(rec.id, { transcriptStatus: 'transcribing' });
+    try {
+      const transcript = await transcribeLocalRecording(rec);
+      await applyTranscript(rec.id, { transcript, transcriptStatus: 'done' });
+    } catch {
+      await applyTranscript(rec.id, { transcriptStatus: 'failed' });
+    } finally {
+      transcribingRef.current.delete(rec.id);
+    }
+  }, [effAiTranscription, applyTranscript]);
+
+  // Newest captures first, so the one just saved reads back immediately.
+  useEffect(() => {
+    if (!effAiTranscription) return;
+    recordings.filter((r) => r.blob && !r.transcriptStatus).slice(0, 3).forEach((r) => transcribeLocal(r));
+  }, [recordings, effAiTranscription, transcribeLocal]);
+
   // Automatic cloud offload: push saved captures to the user's own Dropbox and
   // drop the local copy so device space frees itself.
   const autoOffloadNow = useCallback(async () => {
@@ -118,7 +154,7 @@ export default function usePreRoll() {
       loc = { lat: rawLoc.lat, long: rawLoc.long, accuracy: rawLoc.accuracy, place: place?.place || null, locality: place?.locality || null };
     }
     const transcript = triggerType === 'voice' ? lastHeardRef.current : null;
-    const tags = [triggerType, format(ts, 'EEEE'), format(ts, 'a'), loc?.place].filter(Boolean);
+    const tags = [triggerTag(triggerType), format(ts, 'EEEE'), format(ts, 'a'), loc?.place].filter(Boolean);
     const meta = buildMetadata({ timestamp: ts, triggerType, peakDb, durationMs, location: loc, transcript, tags });
     const rec = {
       id: `${ts}_${Math.random().toString(36).slice(2, 7)}`,
@@ -141,6 +177,7 @@ export default function usePreRoll() {
     };
     setRecordings((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
     setCapturing(false);
+    setCaptureKind(null);
     setLastSavedId(rec.id);
     try {
       await saveRecording(rec);
@@ -230,6 +267,7 @@ export default function usePreRoll() {
       onCapture: handleCapture,
       onCaptureStart: (t) => {
         setCapturing(true);
+        setCaptureKind(t);
         if (vibrationRef.current) navigator.vibrate?.(60);
         if (!silentRef.current) {
           const msg = t === 'spike' ? 'Spike detected — saving the moment…' : t === 'voice' ? 'Voice phrase heard — saving…' : 'Saving the moment…';
@@ -286,6 +324,7 @@ export default function usePreRoll() {
     wakeRef.current?.release();
     setListening(false);
     setCapturing(false);
+    setCaptureKind(null);
     setDb(0);
     hideStatus();
   };
@@ -364,7 +403,7 @@ export default function usePreRoll() {
   };
 
   return {
-    listening, capturing, db,
+    listening, capturing, captureKind, db, aiTranscriptionOn: effAiTranscription,
     threshold, rewind: effRewind, postRoll: effPostRoll, autoCapture: effAutoCapture, maxAuto, voiceArm, voiceSupported, voiceHeard, silentMode: !settings.notifications,
     recordings, lastSavedId, error,
     refresh, arm, disarm,

@@ -56,10 +56,7 @@ export default function Home() {
             <ArmControl listening={p.listening} onArm={p.arm} onDisarm={p.disarm} />
             <LevelMeter db={p.db} threshold={p.threshold} active={p.listening} />
           </section>
-          <SaveButton listening={p.listening} capturing={p.capturing} rewindLabel={rewindLabel} onSave={p.backThatAppUp} />
-          {p.capturing && (
-            <p className="text-center text-sm text-primary">Saving the last {rewindLabel}…</p>
-          )}
+          <SaveButton listening={p.listening} capturing={p.capturing} captureKind={p.captureKind} rewindLabel={rewindLabel} postRoll={p.postRoll} onSave={p.backThatAppUp} />
           <section className="flex flex-col gap-8 rounded-3xl border-gradient-neon p-6 glow-neon-soft">
             <VoiceTrigger enabled={p.voiceArm} supported={p.voiceSupported} heard={p.voiceHeard} onToggle={p.toggleVoiceArm} />
             <div className="h-px bg-border" />
@@ -73,7 +70,7 @@ export default function Home() {
             <StealthToggle enabled={p.silentMode} onToggle={p.toggleSilent} />
           </section>
           <MomentSearch recordings={p.recordings} onHighlight={setHighlightId} />
-          <RecordingsList recordings={p.recordings} lastSavedId={p.lastSavedId} highlightId={highlightId} onDelete={p.remove} onRename={p.rename} onProtect={p.protect} onDeleteAllTemporary={p.deleteAllTemp} />
+          <RecordingsList recordings={p.recordings} transcriptionOn={p.aiTranscriptionOn} lastSavedId={p.lastSavedId} highlightId={highlightId} onDelete={p.remove} onRename={p.rename} onProtect={p.protect} onDeleteAllTemporary={p.deleteAllTemp} />
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
             Audio stays in memory only. Nothing is written until a spike or a tap, and clips never leave this device.
           </p>
