@@ -17,7 +17,8 @@ export function captureLocation() {
 export async function reverseGeocode(lat, long) {
   try {
     const res = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${long}&localityLanguage=en`
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${long}&localityLanguage=en`,
+      { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return null;
     const d = await res.json();

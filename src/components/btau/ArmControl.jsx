@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff } from 'lucide-react';
 
-export default function ArmControl({ listening, onArm, onDisarm }) {
+export default function ArmControl({ listening, starting, onArm, onDisarm }) {
   return (
     <div className="relative flex h-56 w-56 items-center justify-center">
       <AnimatePresence>
@@ -19,11 +19,12 @@ export default function ArmControl({ listening, onArm, onDisarm }) {
       </AnimatePresence>
       <motion.button
         whileTap={{ scale: 0.96 }}
+        disabled={starting}
         onClick={listening ? onDisarm : onArm}
         className={`relative flex h-44 w-44 flex-col items-center justify-center gap-2 rounded-full border transition-colors duration-500 ${listening ? 'border-primary/70 bg-primary/10 text-primary glow-cyan' : 'border-border bg-card text-foreground hover:border-foreground/30'}`}
       >
         {listening ? <Mic className="h-8 w-8" strokeWidth={1.5} /> : <MicOff className="h-8 w-8" strokeWidth={1.5} />}
-        <span className="text-sm uppercase tracking-[0.24em]">{listening ? 'Tap to stop' : 'Arm'}</span>
+        <span className="text-sm uppercase tracking-[0.24em]">{starting ? 'Starting…' : listening ? 'Tap to stop' : 'Arm'}</span>
       </motion.button>
     </div>
   );

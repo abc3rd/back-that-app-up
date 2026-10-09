@@ -1,4 +1,4 @@
-import { encodeWav } from './wav';
+import { encodeWav } from './wav.js';
 
 export const STANDARD_RATE = 16000;
 export const HIGH_RATE = 44100;
@@ -14,9 +14,18 @@ export const HIGH_RATE = 44100;
 // - Quality (sample rate) and input device are applied at start (arm) time.
 // - Cooldowns prevent overlapping captures; sustained-duration gates spikes.
 export default class PreRollEngine {
-  constructor({ onLevel, onCapture, onCaptureStart }) {
-    Object.assign(this, { onLevel, onCapture, onCaptureStart });
+  /**
+   * @param {{onLevel?: (level: number) => void, onCapture?: (clip: {blob: Blob, durationMs: number, peakDb: number, triggerType: string, triggerTimestamp: number, triggerOffsetMs: number, interrupted: boolean}) => unknown, onCaptureStart?: (type: string) => void, onError?: (error: Error) => void, onState?: (state: string) => void}} callbacks
+   */
+  constructor({ onLevel = () => {}, onCapture = () => {}, onCaptureStart = () => {}, onError = () => {}, onState = () => {} }) {
+    this.onLevel = onLevel;
+    this.onCapture = onCapture;
+    this.onCaptureStart = onCaptureStart;
+    this.onError = onError;
+    this.onState = onState;
     this.post = null;
+    this.saving = false;
+    this.persistenceBlocked = false;
     this.lastDb = 0;
     this.autoCapture = false;
     this.postRollSeconds = 10;
@@ -35,37 +44,55 @@ export default class PreRollEngine {
   }
 
   async start(rewindSeconds, threshold) {
-    const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
-    if (this.inputDeviceId) audio.deviceId = { exact: this.inputDeviceId };
-    this.stream = await navigator.mediaDevices.getUserMedia({ audio });
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    await this.ctx.resume();
-    this.source = this.ctx.createMediaStreamSource(this.stream);
-    this.node = this.ctx.createScriptProcessor(4096, 1, 1);
-    this.node.onaudioprocess = (e) => this.process(e.inputBuffer.getChannelData(0));
-    const sink = this.ctx.createGain();
-    sink.gain.value = 0;
-    this.source.connect(this.node);
-    this.node.connect(sink);
-    sink.connect(this.ctx.destination);
-    this.pos = 0;
-    this.threshold = threshold;
-    this.setRewind(rewindSeconds);
+    try {
+      const audio = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+      if (this.inputDeviceId) audio.deviceId = { exact: this.inputDeviceId };
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio });
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await this.ctx.resume();
+      this.ctx.onstatechange = () => {
+        this.onState(this.ctx?.state);
+        if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.onError(new Error('Audio capture paused. Return to the app and restart listening.'));
+      };
+      this.stream.getTracks().forEach((track) => {
+        track.onended = () => { this.onError(new Error('Microphone disconnected. Restart listening.')); this.stop(); };
+      });
+      this.source = this.ctx.createMediaStreamSource(this.stream);
+      this.node = this.ctx.createScriptProcessor(4096, 1, 1);
+      this.node.onaudioprocess = (e) => this.process(e.inputBuffer.getChannelData(0));
+      const sink = this.ctx.createGain();
+      this.sink = sink;
+      sink.gain.value = 0;
+      this.source.connect(this.node);
+      this.node.connect(sink);
+      sink.connect(this.ctx.destination);
+      this.pos = 0;
+      this.threshold = threshold;
+      this.setRewind(rewindSeconds);
+    } catch (error) { this.stop(); throw error; }
   }
 
   stop() {
-    if (this.post) this.finishPost();
+    if (this.post) this.finishPost(true);
+    if (this.node) this.node.onaudioprocess = null;
     this.node?.disconnect();
     this.source?.disconnect();
-    this.stream?.getTracks().forEach((t) => t.stop());
-    this.ctx?.close();
+    this.sink?.disconnect();
+    this.stream?.getTracks().forEach((t) => { t.onended = null; t.stop(); });
+    if (this.ctx) { this.ctx.onstatechange = null; this.ctx.close().catch(this.onError); }
     this.ctx = null;
+    this.stream = null;
+    this.onState('closed');
   }
 
   setRewind(seconds) {
-    this.ring = new Int16Array(seconds * this.sampleRate);
-    this.w = 0;
-    this.filled = false;
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 600) throw new Error('Pre-roll must be greater than zero and at most 600 seconds.');
+    const previous = this.ring ? this.snapshot() : new Int16Array();
+    this.ring = new Int16Array(Math.round(seconds * this.sampleRate));
+    const retained = previous.subarray(Math.max(0, previous.length - this.ring.length));
+    this.ring.set(retained);
+    this.w = retained.length % this.ring.length;
+    this.filled = retained.length === this.ring.length;
   }
   setPostRoll(s) { this.postRollSeconds = s; }
   setAutoCapture(on) { this.autoCapture = !!on; }
@@ -77,6 +104,7 @@ export default class PreRollEngine {
   setSustainedDuration(ms) { this.sustainedDurationMs = ms; this.sustainedSince = 0; }
 
   process(input) {
+    if (!this.ctx || !this.ring) return;
     const ratio = this.ctx.sampleRate / this.sampleRate;
     const out = new Int16Array(Math.ceil((input.length - this.pos) / ratio));
     let n = 0;
@@ -95,11 +123,13 @@ export default class PreRollEngine {
 
     const spike = this.detectSpike(db);
     if (this.post) {
-      this.post.chunks.push(samples.slice());
-      this.post.count += n;
+      const remaining = Math.max(0, Math.round(this.post.seconds * this.sampleRate) - this.post.count);
+      const chunk = samples.slice(0, remaining);
+      this.post.chunks.push(chunk);
+      this.post.count += chunk.length;
       this.post.peak = Math.max(this.post.peak, db);
       if (this.post.count >= this.post.seconds * this.sampleRate) this.finishPost();
-    } else if (this.autoCapture && spike) {
+    } else if (!this.saving && !this.persistenceBlocked && this.autoCapture && spike) {
       if (this.sustainedDurationMs > 0) {
         if (!this.sustainedSince) this.sustainedSince = Date.now();
         if (Date.now() - this.sustainedSince >= this.sustainedDurationMs && this.offSpikeCooldown()) this.fireSpike();
@@ -133,7 +163,7 @@ export default class PreRollEngine {
   }
 
   capture(type) {
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running' || this.saving || this.persistenceBlocked) return false;
     if (this.post) {
       // A capture is already running. Optionally extend it on a second non-spike trigger.
       if (type !== 'spike' && this.extendOnSecondTrigger) {
@@ -144,6 +174,7 @@ export default class PreRollEngine {
     }
     if (type === 'voice' && Date.now() - this.lastCaptureAt < this.triggerCooldownMs) return;
     if (type === 'spike' && !this.offSpikeCooldown()) return;
+    if (!this.snapshot().length) { this.onError(new Error('Buffer is still empty. Wait a moment and try again.')); return false; }
     this.lastCaptureAt = Date.now();
     this.sustainedSince = 0;
     const triggerTimestamp = Date.now();
@@ -157,6 +188,8 @@ export default class PreRollEngine {
       seconds: this.postRollSeconds,
     };
     this.onCaptureStart?.(type);
+    if (this.post.seconds === 0) this.finishPost();
+    return true;
   }
 
   write(samples) {
@@ -177,30 +210,35 @@ export default class PreRollEngine {
     return out;
   }
 
-  finishPost() {
+  finishPost(interrupted = false) {
+    if (!this.post) return;
     const { pre, chunks, count, peak, triggerType, triggerTimestamp } = this.post;
     const all = new Int16Array(pre.length + count);
     all.set(pre);
     let o = pre.length;
     chunks.forEach((c) => { all.set(c, o); o += c.length; });
     this.post = null;
-    this.emit(all, triggerType, peak, triggerTimestamp, pre.length);
+    this.emit(all, triggerType, peak, triggerTimestamp, pre.length, interrupted);
   }
 
-  saveNow() { this.capture('button'); }
-  voiceCapture() { this.capture('voice'); }
+  saveNow() { return this.capture('button'); }
+  voiceCapture() { return this.capture('voice'); }
 
-  emit(samples, triggerType, peakDb, triggerTimestamp, preRollSamples) {
+  emit(samples, triggerType, peakDb, triggerTimestamp, preRollSamples, interrupted) {
     if (!samples.length) return;
     const blob = encodeWav(samples, this.sampleRate);
     const triggerOffsetMs = Math.round((preRollSamples / this.sampleRate) * 1000);
-    this.onCapture({
-      blob,
-      durationMs: (samples.length / this.sampleRate) * 1000,
-      peakDb,
-      triggerType,
-      triggerTimestamp,
-      triggerOffsetMs,
-    });
+    this.saving = true;
+    try {
+      Promise.resolve(this.onCapture({
+        blob,
+        durationMs: (samples.length / this.sampleRate) * 1000,
+        peakDb,
+        triggerType,
+        triggerTimestamp,
+        triggerOffsetMs,
+        interrupted,
+      })).catch(this.onError).finally(() => { this.saving = false; });
+    } catch (error) { this.saving = false; this.onError(error); }
   }
 }

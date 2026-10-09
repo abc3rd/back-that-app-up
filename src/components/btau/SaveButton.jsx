@@ -8,8 +8,8 @@ const HINTS = {
   spike: () => 'Sound spike detected — saving the moment…',
 };
 
-export default function SaveButton({ listening, capturing, captureKind, rewindLabel, postRoll, onSave }) {
-  const hint = capturing
+export default function SaveButton({ listening, saving, pendingSave, capturing, captureKind, rewindLabel, postRoll, onSave }) {
+  const hint = pendingSave ? 'Save or download the unsaved clip before another capture' : saving ? 'Saving capture…' : capturing
     ? (HINTS[captureKind] || (() => 'Saving the moment…'))(rewindLabel, postRoll)
     : listening
       ? `Saves the last ${rewindLabel} and keeps listening`
@@ -18,7 +18,7 @@ export default function SaveButton({ listening, capturing, captureKind, rewindLa
     <div className="flex flex-col items-center gap-3">
       <motion.button
         whileTap={{ scale: 0.98 }}
-        disabled={!listening}
+        disabled={!listening || saving || pendingSave}
         onClick={onSave}
         className="flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#00F2FF] to-[#FF00FF] py-5 font-display text-2xl font-bold text-[#050508] shadow-[0_0_24px_rgba(0,242,255,0.4)] transition-opacity duration-300 disabled:opacity-25"
       >

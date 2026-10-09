@@ -6,6 +6,12 @@ import pluginUnusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
+    files: ["src/hooks/**/*.{js,jsx}"],
+    languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+    plugins: { "react-hooks": pluginReactHooks },
+    rules: { "react-hooks/rules-of-hooks": "error" },
+  },
+  {
     files: [
       "src/components/**/*.{js,mjs,cjs,jsx}",
       "src/pages/**/*.{js,mjs,cjs,jsx}",

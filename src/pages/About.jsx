@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Rewind, Mic, Shield, Cloud, Zap, Activity, Sparkles, Lock } from 'lucide-react';
+import { Rewind, Mic, Cloud, Zap, Activity, Sparkles, Lock } from 'lucide-react';
 import ScreenHeader from '@/components/btau/ScreenHeader';
 import PublicFooter from '@/components/btau/PublicFooter';
 
