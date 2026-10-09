@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckSquare, Download, Loader2, Search, Square, Trash2, X } from 'lucide-react';
+import { CheckSquare, Download, Loader2, Search, Trash2, X } from 'lucide-react';
 import RecordingItem from './RecordingItem';
 import { buildZip, downloadBlob } from '@/lib/preroll/zip';
 import { useToast } from '@/components/ui/use-toast';

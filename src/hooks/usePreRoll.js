@@ -48,7 +48,14 @@ export default function usePreRoll() {
   const recordingsRef = useRef([]);
   const transcribingRef = useRef(new Set());
   const pendingMomentRef = useRef(new Set());
+  const startingRef = useRef(false);
+  const sessionRef = useRef(0);
+  const mountedRef = useRef(true);
+  const failedCaptureRef = useRef(null);
 
+  const [starting, setStarting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
   const [listening, setListening] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [captureKind, setCaptureKind] = useState(null);
@@ -97,8 +104,26 @@ export default function usePreRoll() {
     if (effMaxStorageBytes > 0) await cleanupByStorageLimit(effMaxStorageBytes);
     setRecordings(await listRecordings());
   }, [effTempRetentionHours, effMaxStorageBytes]);
-  useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => () => { recWantedRef.current = false; engineRef.current?.stop(); recRef.current?.stop(); }, []);
+  useEffect(() => {
+    const safelyRefresh = () => refresh().catch((e) => setError(`Could not read saved recordings: ${e.message}`));
+    safelyRefresh();
+    const timer = setInterval(safelyRefresh, 60000);
+    return () => clearInterval(timer);
+  }, [refresh]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      sessionRef.current++;
+      recWantedRef.current = false;
+      recGenRef.current++;
+      listeningRef.current = false;
+      engineRef.current?.stop();
+      recRef.current?.stop();
+      wakeRef.current?.release().catch(() => {});
+      hideStatus();
+    };
+  }, []);
 
   // Visual-voicemail style transcripts: each capture is transcribed in the
   // background and its text is stored with the recording.
@@ -153,9 +178,11 @@ export default function usePreRoll() {
       toast({ description: `Moved ${r.uploaded} recording${r.uploaded === 1 ? '' : 's'} to ${CLOUD_LABELS[r.target] || 'cloud storage'}` });
     }
   }, [settings.autoOffload, refresh, toast]);
-  useEffect(() => { autoOffloadNow(); }, [autoOffloadNow]);
+  useEffect(() => { autoOffloadNow().catch((e) => setError(`Cloud offload failed: ${e.message}`)); }, [autoOffloadNow]);
 
-  const handleCapture = useCallback(async ({ blob, durationMs, peakDb, triggerType, triggerTimestamp, triggerOffsetMs }) => {
+  const handleCapture = useCallback(async ({ blob, durationMs, peakDb, triggerType, triggerTimestamp, triggerOffsetMs, interrupted }) => {
+    setSaving(true);
+    let locallySaved = false;
     const ts = triggerTimestamp || Date.now();
     const protectedCapture = triggerType === 'button' || triggerType === 'voice';
     const rawLoc = locRef.current;
@@ -171,7 +198,8 @@ export default function usePreRoll() {
     const rec = {
       id: `${ts}_${Math.random().toString(36).slice(2, 7)}`,
       name: `btau_${format(ts, 'yyyy-MM-dd_HH-mm-ss')}_${triggerType}.wav`,
-      label: format(ts, 'MMM d · HH:mm:ss'),
+      label: `${format(ts, 'MMM d · HH:mm:ss')}${interrupted ? ' (partial)' : ''}`,
+      interrupted: !!interrupted,
       timestamp: ts,
       durationMs,
       sizeBytes: blob.size,
@@ -191,15 +219,16 @@ export default function usePreRoll() {
     setRecordings((prev) => [rec, ...prev.filter((r) => r.id !== rec.id)]);
     setCapturing(false);
     setCaptureKind(null);
-    setLastSavedId(rec.id);
     try {
       await saveRecording(rec);
-      base44.analytics.track({ eventName: 'recording_saved' });
+      locallySaved = true;
+      setLastSavedId(rec.id);
+      try { Promise.resolve(base44.analytics.track({ eventName: 'recording_saved' })).catch(() => {}); } catch { /* Keep saved clips usable if analytics fails. */ }
       if (!protectedCapture) await cleanupTemporary(maxAuto);
       if (effTempRetentionHours > 0) await cleanupTemporaryByAge(effTempRetentionHours);
       if (effMaxStorageBytes > 0) await cleanupByStorageLimit(effMaxStorageBytes);
-      refresh();
-      autoOffloadNow();
+      await refresh();
+      autoOffloadNow().catch(() => {});
       // Moment + transcript are best-effort: the clip is already saved on device,
       // so a hiccup here must never surface as a failed capture.
       try {
@@ -216,14 +245,24 @@ export default function usePreRoll() {
         transcribeRec(rec);
       }
     } catch (e) {
+      pendingMomentRef.current.delete(rec.id);
+      if (locallySaved) {
+        setError(`Capture saved locally, but follow-up processing failed: ${e?.message || 'unknown error'}`);
+        setSaving(false);
+        return;
+      }
+      failedCaptureRef.current = rec;
+      if (engineRef.current) engineRef.current.persistenceBlocked = true;
+      setPendingSave(true);
       setRecordings((prev) => prev.filter((r) => r.id !== rec.id));
       const full = e?.name === 'QuotaExceededError' || /quota|storage/i.test(e?.message || '');
       setError(full
-        ? 'Device storage is full, so the capture was not saved. Delete temporary captures or lower the storage limit in Settings, then try again.'
-        : `Couldn't save the capture: ${e?.message || 'unknown error'}. Try again.`);
+        ? 'Device storage is full, so the capture was not saved. Delete temporary captures, then use Retry save. This unsaved clip stays in memory only until you leave.'
+        : `Couldn't save the capture: ${e?.message || 'unknown error'}. Use Retry save before leaving.`);
       toast({ variant: 'destructive', description: 'Capture failed — see the message at the top of the screen' });
     }
-    if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current);
+    setSaving(false);
+    if (listeningRef.current && !silentRef.current) showStatus('Back That App Up! — Listening', 'Pre-roll capture is active.', soundRef.current);
   }, [refresh, maxAuto, effTempRetentionHours, effMaxStorageBytes, saveMoment, toast, autoOffloadNow, transcribeRec]);
 
   const stopRec = useCallback(() => {
@@ -235,7 +274,7 @@ export default function usePreRoll() {
 
   const startRec = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR || !voiceSupported) return;
     stopRec();
     const myGen = ++recGenRef.current;
     const rec = new SR();
@@ -244,14 +283,15 @@ export default function usePreRoll() {
     rec.lang = 'en-US';
     const phrases = [effPhrase, ...effCustomPhrases].map((p) => p.toLowerCase().trim()).filter(Boolean);
     rec.onresult = (e) => {
-      const text = Array.from(e.results).map((r) => r[0].transcript).join(' ').toLowerCase();
+      const text = Array.from(e.results).slice(e.resultIndex).filter((r) => r.isFinal).map((r) => r[0].transcript).join(' ').toLowerCase();
       if (!phrases.some((p) => text.includes(p))) return;
       setVoiceHeard(true);
       lastHeardRef.current = text;
-      setTimeout(() => setVoiceHeard(false), 1500);
+      setTimeout(() => { if (mountedRef.current) setVoiceHeard(false); }, 1500);
       if (listeningRef.current && engineRef.current) {
         engineRef.current.voiceCapture();
-        stopRec(); // clear transcript; onend restarts recognition, not the mic
+        stopRec(); // Invalidate the old recognizer and explicitly create a fresh one.
+        if (recWantedRef.current) startRec();
       } else {
         stopRec();
         armRef.current?.();
@@ -282,9 +322,13 @@ export default function usePreRoll() {
       }
     };
     try { rec.start(); recRef.current = rec; } catch {}
-  }, [stopRec, toast, effPhrase, effCustomPhrases, settings]);
+  }, [stopRec, toast, effPhrase, effCustomPhrases, settings, voiceSupported]);
 
   const arm = async () => {
+    if (startingRef.current || listeningRef.current || failedCaptureRef.current) return;
+    startingRef.current = true;
+    setStarting(true);
+    const session = ++sessionRef.current;
     setError(null);
     recWantedRef.current = false;
     stopRec();
@@ -292,6 +336,10 @@ export default function usePreRoll() {
     const engine = new PreRollEngine({
       onLevel: setDb,
       onCapture: handleCapture,
+      onError: (err) => { if (mountedRef.current) { setError(err.message || 'Audio capture failed.'); setSaving(false); } },
+      onState: (state) => {
+        if (mountedRef.current && state !== 'running') { listeningRef.current = false; setListening(false); }
+      },
       onCaptureStart: (t) => {
         setCapturing(true);
         setCaptureKind(t);
@@ -311,7 +359,9 @@ export default function usePreRoll() {
     engine.setSpikeCooldown(effSpikeCooldown * 1000);
     engine.setSustainedDuration(effSustainedDuration);
     try {
+      engineRef.current?.stop();
       await engine.start(effRewind, threshold);
+      if (!mountedRef.current || session !== sessionRef.current) { engine.stop(); return; }
     } catch (err) {
       const name = err?.name || '';
       const denied = name === 'NotAllowedError' || name === 'SecurityError';
@@ -324,19 +374,20 @@ export default function usePreRoll() {
           : `Couldn't start listening: ${err?.message || 'unknown error'}. Tap Arm to try again.`
       );
       return;
-    }
+    } finally { startingRef.current = false; if (mountedRef.current) setStarting(false); }
     engineRef.current = engine;
+    listeningRef.current = true;
     setListening(true);
-    base44.analytics.track({ eventName: 'detector_armed' });
-    if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current));
-    navigator.wakeLock?.request('screen').then((l) => { wakeRef.current = l; }).catch(() => {});
+    try { Promise.resolve(base44.analytics.track({ eventName: 'detector_armed' })).catch(() => {}); } catch { /* Analytics must not block recording. */ }
+    if (!silentRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active.', soundRef.current));
+    navigator.wakeLock?.request('screen').then((l) => { if (session === sessionRef.current && mountedRef.current) wakeRef.current = l; else l.release(); }).catch(() => {});
     if (voiceArmRef.current) { recWantedRef.current = true; startRec(); }
   };
   useEffect(() => { armRef.current = arm; }, [arm]);
   // Start/stop the speech recognizer whenever voice-arm is on, so the phrase
   // can arm the detector (not just save while already listening).
   useEffect(() => {
-    if (voiceArm) { recWantedRef.current = true; startRec(); }
+    if (voiceArm && voiceSupported) { recWantedRef.current = true; startRec(); }
     else { recWantedRef.current = false; stopRec(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceArm]);
@@ -346,9 +397,12 @@ export default function usePreRoll() {
   }, []);
 
   const disarm = () => {
+    sessionRef.current++;
+    listeningRef.current = false;
     engineRef.current?.stop();
     engineRef.current = null;
-    wakeRef.current?.release();
+    wakeRef.current?.release().catch(() => {});
+    wakeRef.current = null;
     setListening(false);
     setCapturing(false);
     setCaptureKind(null);
@@ -388,10 +442,33 @@ export default function usePreRoll() {
     settings.setNotifications(enabled);
     silentRef.current = !enabled;
     if (!enabled) hideStatus();
-    else if (listeningRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active. Audio stays on this device.', soundRef.current));
+    else if (listeningRef.current) ensurePermission().then((ok) => ok && showStatus('Back That App Up! — Listening', 'Pre-roll capture is active.', soundRef.current));
   };
 
   const backThatAppUp = () => engineRef.current?.saveNow();
+  const retrySave = async () => {
+    const rec = failedCaptureRef.current;
+    if (!rec || saving) return;
+    setSaving(true);
+    try {
+      await saveRecording(rec);
+      failedCaptureRef.current = null;
+      if (engineRef.current) engineRef.current.persistenceBlocked = false;
+      setPendingSave(false);
+      setLastSavedId(rec.id);
+      setError(null);
+      await refresh();
+    } catch (e) { setError(`Could not save clip: ${e.message}. Export it before leaving.`); }
+    finally { setSaving(false); }
+  };
+  const downloadPending = () => {
+    const rec = failedCaptureRef.current;
+    if (!rec) return;
+    const url = URL.createObjectURL(rec.blob);
+    const link = document.createElement('a'); link.href = url; link.download = rec.name;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
   const remove = async (id) => { await deleteRecording(id); refresh(); };
   const rename = async (id, label) => {
     const rec = recordings.find((r) => r.id === id);
@@ -430,7 +507,7 @@ export default function usePreRoll() {
   };
 
   return {
-    listening, capturing, captureKind, db, aiTranscriptionOn: effAiTranscription,
+    starting, saving, pendingSave, retrySave, downloadPending, listening, capturing, captureKind, db, aiTranscriptionOn: effAiTranscription,
     threshold, rewind: effRewind, postRoll: effPostRoll, autoCapture: effAutoCapture, maxAuto, voiceArm, voiceSupported, voiceHeard, silentMode: !settings.notifications,
     recordings, lastSavedId, error,
     refresh, arm, disarm,

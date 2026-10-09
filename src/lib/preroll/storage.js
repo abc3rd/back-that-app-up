@@ -14,9 +14,10 @@ async function run(mode, fn) {
   const db = await open();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, mode);
-    const req = fn(tx.objectStore(STORE));
-    tx.oncomplete = () => resolve(req && req.result !== undefined ? req.result : undefined);
-    tx.onerror = () => reject(tx.error);
+    let req;
+    try { req = fn(tx.objectStore(STORE)); } catch (error) { tx.abort(); db.close(); reject(error); return; }
+    tx.oncomplete = () => { db.close(); resolve(req && req.result !== undefined ? req.result : undefined); };
+    tx.onerror = tx.onabort = () => { db.close(); reject(tx.error || new Error('Recording storage transaction failed.')); };
   });
 }
 

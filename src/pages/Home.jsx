@@ -46,17 +46,21 @@ export default function Home() {
           <Header status={statusLabel} tone={statusTone} micActive={p.listening} />
           {p.error && (
             <div className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
-              <p className="flex-1">{p.error}</p>
+              <p className="flex-1" role="alert">{p.error}</p>
               <button aria-label="Dismiss error" onClick={p.dismissError} className="select-none text-muted-foreground transition-colors hover:text-foreground">
                 <X className="h-4 w-4" />
               </button>
             </div>
           )}
           <section className="flex flex-col items-center gap-10">
-            <ArmControl listening={p.listening} onArm={p.arm} onDisarm={p.disarm} />
+            <ArmControl starting={p.starting} listening={p.listening} onArm={p.arm} onDisarm={p.disarm} />
             <LevelMeter db={p.db} threshold={p.threshold} active={p.listening} />
           </section>
-          <SaveButton listening={p.listening} capturing={p.capturing} captureKind={p.captureKind} rewindLabel={rewindLabel} postRoll={p.postRoll} onSave={p.backThatAppUp} />
+          {p.pendingSave && <div className="flex flex-wrap gap-3">
+            <button disabled={p.saving} onClick={p.retrySave} className="rounded-xl border border-primary px-4 py-3">Retry save</button>
+            <button onClick={p.downloadPending} className="rounded-xl border px-4 py-3">Download unsaved clip</button>
+          </div>}
+          <SaveButton saving={p.saving} pendingSave={p.pendingSave} listening={p.listening} capturing={p.capturing} captureKind={p.captureKind} rewindLabel={rewindLabel} postRoll={p.postRoll} onSave={p.backThatAppUp} />
           <section className="flex flex-col gap-8 rounded-3xl border-gradient-neon p-6 glow-neon-soft">
             <VoiceTrigger enabled={p.voiceArm} supported={p.voiceSupported} heard={p.voiceHeard} onToggle={p.toggleVoiceArm} />
             <div className="h-px bg-border" />
@@ -72,7 +76,7 @@ export default function Home() {
           <MomentSearch recordings={p.recordings} onHighlight={setHighlightId} />
           <RecordingsList recordings={p.recordings} transcriptionOn={p.aiTranscriptionOn} lastSavedId={p.lastSavedId} highlightId={highlightId} onDelete={p.remove} onRename={p.rename} onProtect={p.protect} onDeleteAllTemporary={p.deleteAllTemp} />
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            Audio stays in memory only. Nothing is written until a spike or a tap, and clips never leave this device.
+            Temporary audio stays in memory until a capture. Saved clips use device storage; moment uploads, cloud backup, and transcription may send audio online. Browser recording can pause when the device locks or you switch apps.
           </p>
           <PublicFooter />
         </main>
